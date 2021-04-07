@@ -1,10 +1,35 @@
 import pygame
 import numpy as np
+from entity import Particle
+
+RED = (255, 0, 0)
+GREEN = (0, 255, 0)
+BLUE = (0, 0, 255)
+BLACK = (0, 0, 0)
+GREY = (125, 125, 125)
+
+SUSCEPTIBLE = 3
+INFECTED = 2
+RECOVERED = 1
+REMOVED = 0
+
+SUSCEPTIBLE_COLOR = GREEN
+INFECTED_COLOR = RED
+RECOVERED_COLOR = GREY
 
 class SIM:
-    def __init__(self, width=512, height=512):
+    def process_input(self):
+        event = pygame.event.poll()
+        if event.type == pygame.QUIT:
+            self.running = False
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_ESCAPE:
+                self.running = False
+
+    def __init__(self, T=10, I0=3, R0=0, width=1024, height=600):
         pygame.init()
         self.clock = pygame.time.Clock()
+        self.clock_tick = 60
 
         pygame.display.set_caption("Disease Simulator")
 
@@ -21,41 +46,19 @@ class SIM:
 
         self.running = True
 
-        self.r = 5
-        self.x, self.y = self.X / 2, self.Y / 2
+        self.susceptible_container = list()
+        self.infected_container = list()
+        self.recovered_container = list()
+        self.all_container = list()
 
-        self.d = .4
-        self.t_x = np.random.choice([-self.d, self.d])
-        self.t_y = np.random.choice([self.d, -self.d])
+        self.n_susceptible = T - I0 - R0
+        self.n_infected = I0
+        self.n_recovered = R0
+        self.T = T
+        self.beta = 0.5
+        self.gamma = 0.2
 
-        self.v = np.random.randint(1, 3)
-
-    def process_input(self):
-        event = pygame.event.poll()
-        if event.type == pygame.QUIT:
-            self.running = False
-        elif event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_ESCAPE:
-                self.running = False
-
-    def update(self):
-        if self.f > 60 * 2:
-            self.f = 0
-            self.v = np.random.randint(1, 2)
-            self.t_x = np.random.choice([-self.d, self.d])
-            self.t_y = np.random.choice([self.d, -self.d])
-
-        self.f += 1
-
-        dx , dy = self.t_x, self.t_y
-
-        if self.v > 0:
-            dx *= self.v
-            dy *= self.v
-            self.v -= 0.9
-
-        self.x += dx
-        self.y += dy
+        self.init_groups()
 
     def draw_walls(self):
         wall_color = (50, 0, 150) # RGB
@@ -72,23 +75,48 @@ class SIM:
         bottomRect = pygame.Rect(0, self.wall_bottom, self.X, self.wall_bottom) # left, top, width, height
         pygame.draw.rect(self.window, wall_color, bottomRect)
 
-    def handle_collision(self, e):
+    def init_groups(self):
+        x, y = self.X / 2, self.Y / 2
+        for _ in range(self.n_susceptible):
+            p = Particle(x, y, SUSCEPTIBLE, color=GREEN, clock_tick=self.clock_tick)
+            self.susceptible_container.append(p)
+            self.all_container.append(p)
+
+        for _ in range(self.n_infected):
+            p = Particle(x, y, INFECTED, color=RED, clock_tick=self.clock_tick)
+            self.infected_container.append(p)
+            self.all_container.append(p)
+
+        for _ in range(self.n_recovered):
+            p = Particle(x, y, RECOVERED, color=GREY, clock_tick=self.clock_tick)
+            self.infected_container.append(p)
+            self.all_container.append(p)
+
+    def update(self):
+        for p in self.all_container:
+            p.update_2d_vectors()
+
+    def handle_collision(self, p):
         """
         Discrete collision detection (has tunneling issue)
         """
-        if e.left < self.wall_left or e.right > self.wall_right:
-            self.t_x = -self.t_x
-        elif e.top < self.wall_top or e.bottom > self.wall_bottom:
-            self.t_y = -self.t_y
+        if p.left <= self.wall_left or p.right >= self.wall_right:
+            p.flip_x()
+            print(p.x)
+        elif p.top <= self.wall_top or p.bottom >= self.wall_bottom:
+            p.flip_y()
+            print(p.y)
 
     def render(self):
         self.window.fill((0, 0, 0))
-
         self.draw_walls()
 
-        l1 = pygame.math.Vector2(self.x, self.y)
-        p1 = pygame.draw.circle(self.window, (0, 255, 0), l1, self.r)
-        self.handle_collision(p1)
+        for p in self.all_container:
+            self.handle_collision(p)
+
+        for p in self.all_container:
+            pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
+
         pygame.display.update()
 
     def run(self):
@@ -97,7 +125,7 @@ class SIM:
             self.process_input()
             self.update()
             self.render()
-            self.clock.tick(60)
+            self.clock.tick(self.clock_tick)
 
         pygame.quit()
 
