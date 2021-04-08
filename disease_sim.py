@@ -1,21 +1,9 @@
 import pygame
 import numpy as np
-from entity import Particle, PARTICLE_RADIUS
 
-RED = (255, 0, 0)
-GREEN = (0, 255, 0)
-BLUE = (0, 0, 255)
-BLACK = (0, 0, 0)
-GREY = (125, 125, 125)
+from conf import *
+from entity import *
 
-SUSCEPTIBLE_TYPE = 3
-INFECTED_TYPE = 2
-RECOVERED_TYPE = 1
-REMOVED_TYPE = 0
-
-SUSCEPTIBLE_COLOR = GREEN
-INFECTED_COLOR = RED
-RECOVERED_COLOR = GREY
 
 class SIM:
     def process_input(self):
@@ -26,7 +14,7 @@ class SIM:
             if event.key == pygame.K_ESCAPE:
                 self.running = False
 
-    def __init__(self, RT=5000, T=50, I0=3, R0=0, width=600, height=600):
+    def __init__(self, RT, T, I0, R0, width=800, height=600):
         self.RT = RT
 
         pygame.init()
@@ -83,7 +71,7 @@ class SIM:
 
     def random_y(self):
         r2 = PARTICLE_RADIUS * 2
-        return np.random.randint(r2, self.X - r2)
+        return np.random.randint(r2, self.Y - r2)
 
     def init_groups(self):
         min_ct = self.clock_tick / 2
@@ -91,23 +79,29 @@ class SIM:
 
         for _ in range(self.n_susceptible):
             fps = np.random.randint(min_ct, max_ct)
-            p = Particle(self.random_x(), self.random_y(), SUSCEPTIBLE_TYPE, color=GREEN, clock_tick=fps)
+            p = Particle(
+                    self.random_x(), self.random_y(), SUSCEPTIBLE_TYPE,
+                    color=SUSCEPTIBLE_COLOR, clock_tick=fps)
             self.susceptible_container.append(p)
             self.all_container.append(p)
 
         for _ in range(self.n_infected):
             fps = np.random.randint(min_ct, max_ct)
-            p = Particle(self.random_x(), self.random_y(), INFECTED_TYPE, color=RED, clock_tick=fps)
+            p = Particle(
+                    self.random_x(), self.random_y(), INFECTED_TYPE,
+                    color=INFECTED_COLOR, clock_tick=fps)
             self.infected_container.append(p)
             self.all_container.append(p)
 
         for _ in range(self.n_recovered):
             fps = np.random.randint(min_ct, max_ct)
-            p = Particle(self.random_x(), self.random_y(), RECOVERED_TYPE, color=GREY, clock_tick=fps)
+            p = Particle(
+                    self.random_x(), self.random_y(), RECOVERED_TYPE,
+                    color=RECOVERED_COLOR, clock_tick=fps)
             self.infected_container.append(p)
             self.all_container.append(p)
 
-    def handle_collision(self, p):
+    def handle_wall_collision(self, p):
         """
         Discrete collision detection (has tunneling issue.. tmp fix with threshold)
         """
@@ -115,6 +109,20 @@ class SIM:
             p.flip_x()
         if p.top <= self.wall_top or p.bottom >= self.wall_bottom:
             p.flip_y()
+
+    def euclidean_distance(self, particle, other_particle):
+        x0, y0 = particle.x, particle.y
+        x1, y1 = other_particle.x, other_particle.y
+        return np.sqrt(np.square(x1 - x0) + np.square(y1 - y0))
+
+    def handle_particle_collision(self):
+        # brute force
+        diameter = PARTICLE_RADIUS * 2
+        for i in self.infected_container:
+            for s in self.susceptible_container:
+                d = self.euclidean_distance(i, s)
+                if diameter >= d:
+                    s.infect()
 
     def update(self):
         for p in self.all_container:
@@ -124,8 +132,10 @@ class SIM:
         self.window.fill((0, 0, 0))
         self.draw_walls()
 
+        self.handle_particle_collision()
+
         for p in self.all_container:
-            self.handle_collision(p)
+            self.handle_wall_collision(p)
 
         for p in self.all_container:
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
@@ -146,5 +156,12 @@ class SIM:
 
 
 if __name__ == "__main__":
-    sim = SIM()
+    run_time = 5000 # in ticks
+    T = 300 # # of particles
+    I0 = 3 # initial infected
+    R0 = 0 # initial removed
+    width = 1000
+    height = 600
+    sim = SIM(run_time, T, I0, R0, width, height)
     sim.run()
+

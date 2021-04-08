@@ -1,10 +1,8 @@
 import pygame
 import numpy as np
 
-PARTICLE_RADIUS = 5
-PARTICLE_COLOR = (0, 255, 0)
-PARTICLE_DISPLACEMENT = .4
-PARTICLE_VELOCITY = 2
+from conf import *
+
 
 class Particle:
     def __init__(self, x, y, status, radius=PARTICLE_RADIUS, color=PARTICLE_COLOR, clock_tick=60):
@@ -71,4 +69,9 @@ class Particle:
 
     def flip_y(self):
         self.p_y = -self.p_y
+
+    def infect(self):
+        # TODO probability
+        self.status = INFECTED_TYPE
+        self.color = INFECTED_COLOR
 
