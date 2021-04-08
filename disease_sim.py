@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-from entity import Particle
+from entity import Particle, PARTICLE_RADIUS
 
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -8,10 +8,10 @@ BLUE = (0, 0, 255)
 BLACK = (0, 0, 0)
 GREY = (125, 125, 125)
 
-SUSCEPTIBLE = 3
-INFECTED = 2
-RECOVERED = 1
-REMOVED = 0
+SUSCEPTIBLE_TYPE = 3
+INFECTED_TYPE = 2
+RECOVERED_TYPE = 1
+REMOVED_TYPE = 0
 
 SUSCEPTIBLE_COLOR = GREEN
 INFECTED_COLOR = RED
@@ -26,7 +26,9 @@ class SIM:
             if event.key == pygame.K_ESCAPE:
                 self.running = False
 
-    def __init__(self, T=10, I0=3, R0=0, width=1024, height=600):
+    def __init__(self, RT=5000, T=50, I0=3, R0=0, width=600, height=600):
+        self.RT = RT
+
         pygame.init()
         self.clock = pygame.time.Clock()
         self.clock_tick = 60
@@ -75,37 +77,52 @@ class SIM:
         bottomRect = pygame.Rect(0, self.wall_bottom, self.X, self.wall_bottom) # left, top, width, height
         pygame.draw.rect(self.window, wall_color, bottomRect)
 
+    def random_x(self):
+        r2 = PARTICLE_RADIUS * 2
+        return np.random.randint(r2, self.X - r2)
+
+    def random_y(self):
+        r2 = PARTICLE_RADIUS * 2
+        return np.random.randint(r2, self.X - r2)
+
     def init_groups(self):
-        x, y = self.X / 2, self.Y / 2
+        min_ct = self.clock_tick / 2
+        max_ct = self.clock_tick * 2
+
         for _ in range(self.n_susceptible):
-            p = Particle(x, y, SUSCEPTIBLE, color=GREEN, clock_tick=self.clock_tick)
+            fps = np.random.randint(min_ct, max_ct)
+            p = Particle(self.random_x(), self.random_y(), SUSCEPTIBLE_TYPE, color=GREEN, clock_tick=fps)
             self.susceptible_container.append(p)
             self.all_container.append(p)
 
         for _ in range(self.n_infected):
-            p = Particle(x, y, INFECTED, color=RED, clock_tick=self.clock_tick)
+            fps = np.random.randint(min_ct, max_ct)
+            p = Particle(self.random_x(), self.random_y(), INFECTED_TYPE, color=RED, clock_tick=fps)
             self.infected_container.append(p)
             self.all_container.append(p)
 
         for _ in range(self.n_recovered):
-            p = Particle(x, y, RECOVERED, color=GREY, clock_tick=self.clock_tick)
+            fps = np.random.randint(min_ct, max_ct)
+            p = Particle(self.random_x(), self.random_y(), RECOVERED_TYPE, color=GREY, clock_tick=fps)
             self.infected_container.append(p)
             self.all_container.append(p)
+
+    def handle_collision(self, p):
+        """
+        Discrete collision detection (has tunneling issue.. tmp fix with threshold)
+        """
+        if p.left <= self.wall_left or p.right >= self.wall_right:
+            p.flip_x()
+        if p.top <= self.wall_top or p.bottom >= self.wall_bottom:
+            p.flip_y()
+
+    def handle_collision(self, p):
+        l1, r1 = p.get_next_x_circumference_coordinates()
+        if self.wall_left >
 
     def update(self):
         for p in self.all_container:
             p.update_2d_vectors()
-
-    def handle_collision(self, p):
-        """
-        Discrete collision detection (has tunneling issue)
-        """
-        if p.left <= self.wall_left or p.right >= self.wall_right:
-            p.flip_x()
-            print(p.x)
-        elif p.top <= self.wall_top or p.bottom >= self.wall_bottom:
-            p.flip_y()
-            print(p.y)
 
     def render(self):
         self.window.fill((0, 0, 0))
@@ -120,8 +137,10 @@ class SIM:
         pygame.display.update()
 
     def run(self):
-        self.f = 0
-        while self.running:
+        rt = 0
+
+        while self.running and rt < self.RT:
+            rt += 1
             self.process_input()
             self.update()
             self.render()

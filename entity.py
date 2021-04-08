@@ -4,6 +4,7 @@ import numpy as np
 PARTICLE_RADIUS = 5
 PARTICLE_COLOR = (0, 255, 0)
 PARTICLE_DISPLACEMENT = .4
+PARTICLE_VELOCITY = 2
 
 class Particle:
     def __init__(self, x, y, status, radius=PARTICLE_RADIUS, color=PARTICLE_COLOR, clock_tick=60):
@@ -16,24 +17,24 @@ class Particle:
 
         self.update_circumference_coordinates()
 
-
-        self.location = pygame.math.Vector2(self.x, self.y)
-
         self.displacement = PARTICLE_DISPLACEMENT
         self.p_x = self.displacement # init position
         self.p_y = self.displacement # init position
 
-        self.vel = 1 # velocity
+        self.vel = PARTICLE_VELOCITY # velocity
 
         self.f = 0 # frame
         self.clock_tick = clock_tick
 
-    def next_direction(self):
-        self.p_x = np.random.choice([-self.displacement, self.displacement])
-        self.p_y = np.random.choice([self.displacement, -self.displacement])
+    def next_x(self):
+        return np.random.choice([-self.displacement, self.displacement, 0.0])
 
-    def update_velocity(self):
-        self.vel = np.random.randint(1, 5)
+    def next_y(self):
+        return np.random.choice([self.displacement, -self.displacement, 0.0])
+
+    def next_direction(self):
+        self.p_x = self.next_x()
+        self.p_y = self.next_y()
 
     def update_circumference_coordinates(self):
         self.top = abs(self.y) - self.radius
@@ -41,24 +42,26 @@ class Particle:
         self.bottom = abs(self.y) + self.radius
         self.left = abs(self.x) - self.radius
 
-    def update_coordinates(self):
-        dx = self.p_x
-        dy = self.p_y
+    def get_next_x_circumference_coordinates(self):
+        d = (self.radius * 2)
+        return abs(self.x) - d, abs(self.x) + d
 
-        if self.vel > 0:
-            dx *= self.vel
-            dy *= self.vel
-            self.vel -= 0.3
+    def get_next_y_curcumference_coordinates(self):
+        d = (self.radius * 2)
+        return abs(self.y) - d, abs(self.y) + d
+
+    def update_coordinates(self):
+        dx = self.p_x * self.vel
+        dy = self.p_y * self.vel
 
         self.x += dx
         self.y += dy
 
     def update_2d_vectors(self):
         self.f += 1
-        if self.f > self.clock_tick * 2:
+        if self.f > self.clock_tick:
             self.f = 0
             self.next_direction()
-            self.update_velocity()
 
         self.update_coordinates()
         self.update_circumference_coordinates()
