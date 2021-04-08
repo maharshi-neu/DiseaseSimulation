@@ -116,10 +116,6 @@ class SIM:
         if p.top <= self.wall_top or p.bottom >= self.wall_bottom:
             p.flip_y()
 
-    def handle_collision(self, p):
-        l1, r1 = p.get_next_x_circumference_coordinates()
-        if self.wall_left >
-
     def update(self):
         for p in self.all_container:
             p.update_2d_vectors()
