@@ -4,6 +4,10 @@ import numpy as np
 from conf import *
 from entity import *
 
+# ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
+import os
+os.environ['SDL_AUDIODRIVER'] = 'dsp'
+
 
 class SIM:
     def process_input(self):
@@ -47,6 +51,8 @@ class SIM:
         self.T = T
         self.beta = 0.5
         self.gamma = 0.2
+
+        self.font = pygame.font.SysFont("Arial", 18)
 
         self.init_groups()
 
@@ -118,11 +124,51 @@ class SIM:
     def handle_particle_collision(self):
         # brute force
         diameter = PARTICLE_RADIUS * 2
+        newly_infected = list()
+
         for i in self.infected_container:
             for s in self.susceptible_container:
                 d = self.euclidean_distance(i, s)
                 if diameter >= d:
                     s.infect()
+                    newly_infected.append(s)
+
+        self.susceptible_container = [sus for sus in self.susceptible_container if not sus.status == INFECTED_TYPE]
+        self.infected_container.extend(newly_infected)
+
+    def handle_particle_collision(self):
+        # sweep n prune
+        diameter = PARTICLE_RADIUS * 2
+        newly_infected = list()
+
+        self.all_container.sort(key=lambda p: p.x)
+        for i in range(0, len(self.all_container) - 1):
+            ip = self.all_container[i]
+            for j in range(i + 1, len(self.all_container)):
+                jp = self.all_container[j]
+                condition = (jp.status == INFECTED_TYPE) + (ip.status == INFECTED_TYPE)
+                if condition == 1:
+                    d = self.euclidean_distance(ip, jp)
+                    if diameter >= d:
+                        if jp.status == INFECTED_TYPE:
+                            ip.infect()
+                            newly_infected.append(ip)
+                        else:
+                            jp.infect()
+                            newly_infected.append(jp)
+                    else:
+                        break
+                else:
+                    break
+
+        if newly_infected:
+            self.susceptible_container = [sus for sus in self.susceptible_container if not sus.status == INFECTED_TYPE]
+            self.infected_container.extend(newly_infected)
+
+    def update_fps(self):
+        fps = str(int(self.clock.get_fps()))
+        fps_text = self.font.render(fps, 1, pygame.Color("coral"))
+        return fps_text
 
     def update(self):
         for p in self.all_container:
@@ -131,6 +177,7 @@ class SIM:
     def render(self):
         self.window.fill((0, 0, 0))
         self.draw_walls()
+        self.window.blit(self.update_fps(), (10,0))
 
         self.handle_particle_collision()
 
@@ -157,10 +204,10 @@ class SIM:
 
 if __name__ == "__main__":
     run_time = 5000 # in ticks
-    T = 300 # # of particles
-    I0 = 3 # initial infected
+    T = 1000 # # of particles
+    I0 = 1 # initial infected
     R0 = 0 # initial removed
-    width = 1000
+    width = 1300
     height = 600
     sim = SIM(run_time, T, I0, R0, width, height)
     sim.run()
