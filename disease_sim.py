@@ -165,6 +165,84 @@ class SIM:
             self.susceptible_container = [sus for sus in self.susceptible_container if not sus.status == INFECTED_TYPE]
             self.infected_container.extend(newly_infected)
 
+    def build_kd_tree(self, points, depth=0):
+        n = len(points)
+
+        if n <= 0:
+            return None
+
+        axis = depth % 2
+        if axis == 0:
+            sorted_points = sorted(points, key=lambda p: p.x)
+        else:
+            sorted_points = sorted(points, key=lambda p: p.y)
+
+        return {
+                'root': sorted_points[n // 2],
+                'left': self.build_kd_tree(sorted_points[:n // 2], depth + 1),
+                'right': self.build_kd_tree(sorted_points[n // 2 + 1:], depth + 1)
+                }
+
+    def handle_particle_collision(self):
+        # kd tree
+        diameter = PARTICLE_RADIUS * 2
+
+        sus_tree = self.build_kd_tree(self.susceptible_container)
+        i_tree = self.build_kd_tree(self.infected_container)
+
+        depth = 0
+        print(len(self.infected_container))
+
+        newly_infected = list()
+
+        # ir = i_tree['root']
+        # sr = sus_tree['root']
+
+        # it = i_tree
+        # while it:
+        #     st = sus_tree
+        #     while st:
+        #         if depth % 2 == 0:
+        #             d = self.euclidean_distance(ir, sr)
+        #             if diameter >= d:
+        #                 st.infect()
+        #                 newly_infected.append(st)
+        #             if it.x < st.x:
+        #                 pass
+
+        sorted_x = sorted(self.infected_container, key=lambda p: p.x)
+        for i in sorted_x:
+            t = sus_tree
+            while t:
+                if depth % 2 == 0:
+                    d = self.euclidean_distance(i, t['root'])
+                    if diameter >= d:
+                        t['root'].infect()
+                        newly_infected.append(t['root'])
+
+                    if i.x < t['root'].x:
+                        t = t['left']
+                        depth += 1
+                    else:
+                        t = t['right']
+                        depth += 1
+                else:
+                    d = self.euclidean_distance(i, t['root'])
+                    if diameter >= d:
+                        t['root'].infect()
+                        newly_infected.append(t['root'])
+
+                    if i.y < t['root'].y:
+                        t = t['left']
+                        depth += 1
+                    else:
+                        t = t['right']
+                        depth += 1
+
+        if newly_infected:
+            self.susceptible_container = [sus for sus in self.susceptible_container if sus.status == SUSCEPTIBLE_TYPE]
+            self.infected_container.extend(newly_infected)
+
     def update_fps(self):
         fps = str(int(self.clock.get_fps()))
         fps_text = self.font.render(fps, 1, pygame.Color("coral"))
