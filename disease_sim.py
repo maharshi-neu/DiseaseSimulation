@@ -122,21 +122,6 @@ class SIM:
         return np.sqrt(np.square(x1 - x0) + np.square(y1 - y0))
 
     def handle_particle_collision(self):
-        # brute force
-        diameter = PARTICLE_RADIUS * 2
-        newly_infected = list()
-
-        for i in self.infected_container:
-            for s in self.susceptible_container:
-                d = self.euclidean_distance(i, s)
-                if diameter >= d:
-                    s.infect()
-                    newly_infected.append(s)
-
-        self.susceptible_container = [sus for sus in self.susceptible_container if not sus.status == INFECTED_TYPE]
-        self.infected_container.extend(newly_infected)
-
-    def handle_particle_collision(self):
         # sweep n prune
         diameter = PARTICLE_RADIUS * 2
         newly_infected = list()
