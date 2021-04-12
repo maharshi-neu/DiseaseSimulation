@@ -5,7 +5,7 @@ from conf import *
 
 
 class Particle:
-    def __init__(self, x, y, status, radius=PARTICLE_RADIUS, color=PARTICLE_COLOR, clock_tick=60):
+    def __init__(self, x, y, status, beta, gamma, radius=PARTICLE_RADIUS, color=PARTICLE_COLOR, clock_tick=60):
         self.x = x
         self.y = y
         self.status = status
@@ -23,6 +23,12 @@ class Particle:
 
         self.f = 0 # frame
         self.clock_tick = clock_tick
+
+        self.recovery_frame = 0.0
+        self.gamma = gamma
+        self.beta = beta
+
+        self.infected_count = 0
 
     def next_x(self):
         return np.random.choice([-self.displacement, self.displacement, 0.0])
@@ -70,8 +76,25 @@ class Particle:
     def flip_y(self):
         self.p_y = -self.p_y
 
-    def infect(self):
+    def is_infected(self):
+        return True if self.status == INFECTED_TYPE else False
+
+    def infect(self, infectee):
+        infectee.update_infected_count()
+
         # TODO probability
         self.status = INFECTED_TYPE
         self.color = INFECTED_COLOR
+
+    def update_infected_count(self):
+        if self.is_infected():
+            self.infected_count += 1
+
+    def update_recovery_frame(self):
+        if self.is_infected() and self.infected_count > self.beta:
+            if self.recovery_frame > 1:
+                self.status = RECOVERED_TYPE
+                self.color = RECOVERED_COLOR
+            else:
+                self.recovery_frame += self.gamma
 
