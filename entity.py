@@ -73,5 +73,6 @@ class Particle:
     def infect(self):
         # TODO probability
         self.status = INFECTED_TYPE
+        # self.color = SICK_YELLOW
         self.color = INFECTED_COLOR
 

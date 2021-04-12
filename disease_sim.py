@@ -1,8 +1,14 @@
 import pygame
 import numpy as np
+import copy
 
 from conf import *
 from entity import *
+from linked_list import *
+
+# ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
+import os
+os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 
 class SIM:
@@ -36,9 +42,9 @@ class SIM:
 
         self.running = True
 
-        self.susceptible_container = list()
-        self.infected_container = list()
-        self.recovered_container = list()
+        self.susceptible_container = LinkedList()
+        self.infected_container = LinkedList()
+        self.recovered_container = LinkedList()
         self.all_container = list()
 
         self.n_susceptible = T - I0 - R0
@@ -47,6 +53,8 @@ class SIM:
         self.T = T
         self.beta = 0.5
         self.gamma = 0.2
+
+        self.font = pygame.font.SysFont("Arial", 18)
 
         self.init_groups()
 
@@ -82,7 +90,7 @@ class SIM:
             p = Particle(
                     self.random_x(), self.random_y(), SUSCEPTIBLE_TYPE,
                     color=SUSCEPTIBLE_COLOR, clock_tick=fps)
-            self.susceptible_container.append(p)
+            self.susceptible_container.add(p)
             self.all_container.append(p)
 
         for _ in range(self.n_infected):
@@ -90,7 +98,7 @@ class SIM:
             p = Particle(
                     self.random_x(), self.random_y(), INFECTED_TYPE,
                     color=INFECTED_COLOR, clock_tick=fps)
-            self.infected_container.append(p)
+            self.infected_container.add(p)
             self.all_container.append(p)
 
         for _ in range(self.n_recovered):
@@ -98,7 +106,7 @@ class SIM:
             p = Particle(
                     self.random_x(), self.random_y(), RECOVERED_TYPE,
                     color=RECOVERED_COLOR, clock_tick=fps)
-            self.infected_container.append(p)
+            self.infected_container.add(p)
             self.all_container.append(p)
 
     def handle_wall_collision(self, p):
@@ -118,11 +126,25 @@ class SIM:
     def handle_particle_collision(self):
         # brute force
         diameter = PARTICLE_RADIUS * 2
-        for i in self.infected_container:
-            for s in self.susceptible_container:
-                d = self.euclidean_distance(i, s)
+        infected = self.infected_container.head
+
+        while infected:
+            sus = self.susceptible_container.head
+            while sus:
+                d = self.euclidean_distance(infected.datum, sus.datum)
                 if diameter >= d:
-                    s.infect()
+                    sus.datum.infect()
+
+                    self.infected_container.add(sus.datum)
+                    self.susceptible_container.remove(sus)
+
+                sus = sus.next
+            infected = infected.next
+
+    def update_fps(self):
+        fps = str(int(self.clock.get_fps()))
+        fps_text = self.font.render(fps, 1, pygame.Color("coral"))
+        return fps_text
 
     def update(self):
         for p in self.all_container:
@@ -131,6 +153,7 @@ class SIM:
     def render(self):
         self.window.fill((0, 0, 0))
         self.draw_walls()
+        self.window.blit(self.update_fps(), (10,0))
 
         self.handle_particle_collision()
 
@@ -156,12 +179,12 @@ class SIM:
 
 
 if __name__ == "__main__":
-    run_time = 5000 # in ticks
-    T = 300 # # of particles
+    run_time = 500000 # in ticks
+    T = 500 # # of particles
     I0 = 3 # initial infected
     R0 = 0 # initial removed
-    width = 1000
-    height = 600
+    width = 400
+    height = 400
     sim = SIM(run_time, T, I0, R0, width, height)
     sim.run()
 
