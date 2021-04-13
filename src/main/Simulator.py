@@ -148,6 +148,12 @@ class Simulator:
         fps_text = self.font.render(fps, 1, pygame.Color("coral"))
         return fps_text
 
+    def update_containers(self, newly_infected):
+        if newly_infected:
+            self.susceptible_container = [
+                    sus for sus in self.susceptible_container if not sus.status == cfg.INFECTED_TYPE]
+            self.infected_container.extend(newly_infected)
+
     def update(self):
         for p in self.all_container:
             p.update_2d_vectors()
@@ -170,10 +176,7 @@ class Simulator:
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
             p.update_recovery_frame()
 
-        if newly_infected:
-            self.susceptible_container = [
-                    sus for sus in self.susceptible_container if not sus.status == cfg.INFECTED_TYPE]
-            self.infected_container.extend(newly_infected)
+        self.update_containers(newly_infected)
 
         self.window.blit(self.update_fps(), (10,0))
 
