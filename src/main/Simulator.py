@@ -20,14 +20,14 @@ class Simulator:
             if event.key == pygame.K_ESCAPE:
                 self.running = False
 
-    def __init__(self):
-        pygame.init()
+    def __init__(self, game):
+        # pygame.init()
         self.clock = pygame.time.Clock()
         self.clock_tick = cfg.FPS
 
-        pygame.display.set_caption(cfg.GAME_TITLE)
+        # pygame.display.set_caption(cfg.GAME_TITLE)
 
-        self.X, self.Y = cfg.GAME_WIDTH, cfg.GAME_HEIGHT
+        self.X, self.Y = cfg.WIDTH, cfg.HEIGHT
 
         # Wall co-ordinates
         self.wall_width = cfg.WALL_SIZE
@@ -43,7 +43,8 @@ class Simulator:
                 self.wall_bottom
         ]
 
-        self.window = pygame.display.set_mode((self.X, self.Y))
+        # self.window = pygame.display.set_mode((self.X, self.Y))
+        self.window = game.window
 
         self.running = True
 
