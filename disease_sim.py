@@ -4,9 +4,16 @@ import numpy as np
 from conf import *
 from entity import *
 
+# ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
+# import os
+# os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
-class SIM:
+
+class Simulator:
     def process_input(self):
+        """
+            Keyboard input for exitting
+        """
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
             self.running = False
@@ -45,8 +52,10 @@ class SIM:
         self.n_infected = I0
         self.n_recovered = R0
         self.T = T
-        self.beta = 0.5
-        self.gamma = 0.2
+        self.beta = 2
+        self.gamma = 20 / self.T
+
+        self.font = pygame.font.SysFont("Arial", 18)
 
         self.init_groups()
 
@@ -80,7 +89,7 @@ class SIM:
         for _ in range(self.n_susceptible):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
-                    self.random_x(), self.random_y(), SUSCEPTIBLE_TYPE,
+                    self.random_x(), self.random_y(), SUSCEPTIBLE_TYPE, self.beta, self.gamma,
                     color=SUSCEPTIBLE_COLOR, clock_tick=fps)
             self.susceptible_container.append(p)
             self.all_container.append(p)
@@ -88,7 +97,7 @@ class SIM:
         for _ in range(self.n_infected):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
-                    self.random_x(), self.random_y(), INFECTED_TYPE,
+                    self.random_x(), self.random_y(), INFECTED_TYPE, self.beta, self.gamma,
                     color=INFECTED_COLOR, clock_tick=fps)
             self.infected_container.append(p)
             self.all_container.append(p)
@@ -96,7 +105,7 @@ class SIM:
         for _ in range(self.n_recovered):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
-                    self.random_x(), self.random_y(), RECOVERED_TYPE,
+                    self.random_x(), self.random_y(), RECOVERED_TYPE, self.beta, self.gamma,
                     color=RECOVERED_COLOR, clock_tick=fps)
             self.infected_container.append(p)
             self.all_container.append(p)
@@ -115,30 +124,63 @@ class SIM:
         x1, y1 = other_particle.x, other_particle.y
         return np.sqrt(np.square(x1 - x0) + np.square(y1 - y0))
 
-    def handle_particle_collision(self):
-        # brute force
+    def handle_particle_collision(self, i):
+        # sweep n prune
         diameter = PARTICLE_RADIUS * 2
-        for i in self.infected_container:
-            for s in self.susceptible_container:
-                d = self.euclidean_distance(i, s)
+        newly_infected = list()
+
+        ip = self.all_container[i]
+        for j in range(i + 1, len(self.all_container)):
+            jp = self.all_container[j]
+            condition = (jp.status == INFECTED_TYPE) + (ip.status == INFECTED_TYPE)
+            if condition == 1:
+                d = self.euclidean_distance(ip, jp)
                 if diameter >= d:
-                    s.infect()
+                    if jp.status == INFECTED_TYPE:
+                        ip.infect(jp)
+                        newly_infected.append(ip)
+                    else:
+                        jp.infect(ip)
+                        newly_infected.append(jp)
+                else:
+                    break
+            else:
+                break
+        return newly_infected
+
+    def update_fps(self):
+        fps = str(int(self.clock.get_fps()))
+        fps_text = self.font.render(fps, 1, pygame.Color("coral"))
+        return fps_text
 
     def update(self):
         for p in self.all_container:
             p.update_2d_vectors()
 
     def render(self):
-        self.window.fill((0, 0, 0))
+        self.window.fill(BACKGROUND)
         self.draw_walls()
 
-        self.handle_particle_collision()
+        self.all_container.sort(key=lambda p: p.x)
 
-        for p in self.all_container:
+        newly_infected = list()
+        for pi in range(len(self.all_container)):
+            p = self.all_container[pi]
+
             self.handle_wall_collision(p)
 
-        for p in self.all_container:
+            if pi < self.T - 1:
+                newly_infected = self.handle_particle_collision(pi)
+
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
+            p.update_recovery_frame()
+
+        if newly_infected:
+            self.susceptible_container = [
+                    sus for sus in self.susceptible_container if not sus.status == INFECTED_TYPE]
+            self.infected_container.extend(newly_infected)
+
+        self.window.blit(self.update_fps(), (10,0))
 
         pygame.display.update()
 
@@ -157,11 +199,19 @@ class SIM:
 
 if __name__ == "__main__":
     run_time = 5000 # in ticks
-    T = 300 # # of particles
-    I0 = 3 # initial infected
+    T = 1000 # # of particles
+    I0 = 1 # initial infected
     R0 = 0 # initial removed
-    width = 1000
+    width = 1200
     height = 600
-    sim = SIM(run_time, T, I0, R0, width, height)
+
+    test = 0
+    if test:
+        T = 10
+        I0 = 1
+        width = 100
+        height = 100
+
+    sim = Simulator(run_time, T, I0, R0, width, height)
     sim.run()
 
