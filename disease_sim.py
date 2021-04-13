@@ -9,8 +9,11 @@ from entity import *
 # os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 
-class SIM:
+class Simulator:
     def process_input(self):
+        """
+            Keyboard input for exitting
+        """
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
             self.running = False
@@ -157,7 +160,6 @@ class SIM:
     def render(self):
         self.window.fill(BACKGROUND)
         self.draw_walls()
-        self.window.blit(self.update_fps(), (10,0))
 
         self.all_container.sort(key=lambda p: p.x)
 
@@ -174,8 +176,11 @@ class SIM:
             p.update_recovery_frame()
 
         if newly_infected:
-            self.susceptible_container = [sus for sus in self.susceptible_container if not sus.status == INFECTED_TYPE]
+            self.susceptible_container = [
+                    sus for sus in self.susceptible_container if not sus.status == INFECTED_TYPE]
             self.infected_container.extend(newly_infected)
+
+        self.window.blit(self.update_fps(), (10,0))
 
         pygame.display.update()
 
@@ -207,6 +212,6 @@ if __name__ == "__main__":
         width = 100
         height = 100
 
-    sim = SIM(run_time, T, I0, R0, width, height)
+    sim = Simulator(run_time, T, I0, R0, width, height)
     sim.run()
 
