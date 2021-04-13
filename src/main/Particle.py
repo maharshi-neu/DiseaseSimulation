@@ -1,11 +1,11 @@
 import pygame
 import numpy as np
 
-from conf import *
+from . import cfg
 
 
 class Particle:
-    def __init__(self, x, y, status, beta, gamma, radius=PARTICLE_RADIUS, color=PARTICLE_COLOR, clock_tick=60):
+    def __init__(self, x, y, status, beta, gamma, radius=cfg.PARTICLE_RADIUS, color=cfg.PARTICLE_COLOR, clock_tick=60):
         self.x = x
         self.y = y
         self.status = status
@@ -15,11 +15,11 @@ class Particle:
 
         self.update_circumference_coordinates()
 
-        self.displacement = PARTICLE_DISPLACEMENT
+        self.displacement = cfg.PARTICLE_DISPLACEMENT
         self.p_x = self.displacement # init position
         self.p_y = self.displacement # init position
 
-        self.vel = PARTICLE_VELOCITY # velocity
+        self.vel = cfg.PARTICLE_VELOCITY # velocity
 
         self.f = 0 # frame
         self.clock_tick = clock_tick
@@ -77,14 +77,14 @@ class Particle:
         self.p_y = -self.p_y
 
     def is_infected(self):
-        return True if self.status == INFECTED_TYPE else False
+        return True if self.status == cfg.INFECTED_TYPE else False
 
     def infect(self, infectee):
         infectee.update_infected_count()
 
         # TODO probability
-        self.status = INFECTED_TYPE
-        self.color = INFECTED_COLOR
+        self.status = cfg.INFECTED_TYPE
+        self.color = cfg.INFECTED_COLOR
 
     def update_infected_count(self):
         if self.is_infected():
@@ -93,8 +93,8 @@ class Particle:
     def update_recovery_frame(self):
         if self.is_infected() and self.infected_count > self.beta:
             if self.recovery_frame > 1:
-                self.status = RECOVERED_TYPE
-                self.color = RECOVERED_COLOR
+                self.status = cfg.RECOVERED_TYPE
+                self.color = cfg.RECOVERED_COLOR
             else:
                 self.recovery_frame += self.gamma
 
