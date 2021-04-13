@@ -20,23 +20,28 @@ class Simulator:
             if event.key == pygame.K_ESCAPE:
                 self.running = False
 
-    def __init__(self, RT, T, I0, R0, width=800, height=600):
-        self.RT = RT
-
+    def __init__(self):
         pygame.init()
         self.clock = pygame.time.Clock()
-        self.clock_tick = 60
+        self.clock_tick = cfg.FPS
 
         pygame.display.set_caption(cfg.GAME_TITLE)
 
-        self.X, self.Y = width, height
+        self.X, self.Y = cfg.GAME_WIDTH, cfg.GAME_HEIGHT
 
         # Wall co-ordinates
-        self.wall_width = 5
+        self.wall_width = cfg.WALL_SIZE
         self.wall_left = self.wall_width
         self.wall_top = self.wall_width
         self.wall_right =  self.X - self.wall_width
         self.wall_bottom = self.Y - self.wall_width
+
+        self.wall_vector = [
+                self.wall_left,
+                self.wall_top,
+                self.wall_right,
+                self.wall_bottom
+        ]
 
         self.window = pygame.display.set_mode((self.X, self.Y))
 
@@ -47,10 +52,10 @@ class Simulator:
         self.recovered_container = list()
         self.all_container = list()
 
-        self.n_susceptible = T - I0 - R0
-        self.n_infected = I0
-        self.n_recovered = R0
-        self.T = T
+        self.n_susceptible = cfg.TOTAL - cfg.I0 - cfg.R0
+        self.n_infected = cfg.I0
+        self.n_recovered = cfg.R0
+        self.T = cfg.TOTAL
         self.beta = 2
         self.gamma = 20 / self.T
 
@@ -109,15 +114,6 @@ class Simulator:
             self.infected_container.append(p)
             self.all_container.append(p)
 
-    def handle_wall_collision(self, p):
-        """
-        Discrete collision detection (has tunneling issue.. tmp fix with threshold)
-        """
-        if p.left <= self.wall_left or p.right >= self.wall_right:
-            p.flip_x()
-        if p.top <= self.wall_top or p.bottom >= self.wall_bottom:
-            p.flip_y()
-
     def euclidean_distance(self, particle, other_particle):
         x0, y0 = particle.x, particle.y
         x1, y1 = other_particle.x, other_particle.y
@@ -166,7 +162,7 @@ class Simulator:
         for pi in range(len(self.all_container)):
             p = self.all_container[pi]
 
-            self.handle_wall_collision(p)
+            p.bounce(self.wall_vector)
 
             if pi < self.T - 1:
                 newly_infected = self.handle_particle_collision(pi)
@@ -184,10 +180,7 @@ class Simulator:
         pygame.display.update()
 
     def run(self):
-        rt = 0
-
-        while self.running and rt < self.RT:
-            rt += 1
+        while self.running:
             self.process_input()
             self.update()
             self.render()

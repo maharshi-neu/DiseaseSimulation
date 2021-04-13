@@ -16,8 +16,7 @@ class Particle:
         self.update_circumference_coordinates()
 
         self.displacement = cfg.PARTICLE_DISPLACEMENT
-        self.p_x = self.displacement # init position
-        self.p_y = self.displacement # init position
+        self.angle = self.random_angle()
 
         self.vel = cfg.PARTICLE_VELOCITY # velocity
 
@@ -30,15 +29,12 @@ class Particle:
 
         self.infected_count = 0
 
-    def next_x(self):
-        return np.random.choice([-self.displacement, self.displacement, 0.0])
-
-    def next_y(self):
-        return np.random.choice([self.displacement, -self.displacement, 0.0])
+    def random_angle(self):
+        return np.random.uniform(0, np.pi * 2)
 
     def next_direction(self):
-        self.p_x = self.next_x()
-        self.p_y = self.next_y()
+        direction = np.random.uniform(0, np.pi * 2)
+        self.angle = self.random_angle()
 
     def update_circumference_coordinates(self):
         self.top = abs(self.y) - self.radius
@@ -55,11 +51,11 @@ class Particle:
         return abs(self.y) - d, abs(self.y) + d
 
     def update_coordinates(self):
-        dx = self.p_x * self.vel
-        dy = self.p_y * self.vel
+        dx = np.sin(self.angle) * self.vel
+        dy = np.cos(self.angle) * self.vel
 
         self.x += dx
-        self.y += dy
+        self.y -= dy
 
     def update_2d_vectors(self):
         self.f += 1
@@ -69,12 +65,6 @@ class Particle:
 
         self.update_coordinates()
         self.update_circumference_coordinates()
-
-    def flip_x(self):
-        self.p_x = -self.p_x
-
-    def flip_y(self):
-        self.p_y = -self.p_y
 
     def is_infected(self):
         return True if self.status == cfg.INFECTED_TYPE else False
@@ -98,3 +88,18 @@ class Particle:
             else:
                 self.recovery_frame += self.gamma
 
+    def bounce(self, wall_vector):
+        """
+        Discrete collision detection (has tunneling issue.. not a problem with particles :P)
+        """
+        if self.right >= wall_vector[2]:
+            self.angle = -self.angle
+
+        elif self.left <= wall_vector[0]:
+            self.angle = -self.angle
+
+        if self.bottom >= wall_vector[3]:
+            self.angle = np.pi - self.angle
+
+        elif self.top <= wall_vector[1]:
+            self.angle = np.pi - self.angle
