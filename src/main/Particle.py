@@ -68,4 +68,5 @@ class Particle:
         if self.is_infected() and (day - self.infected_since) >= cfg.RECOVERED_PERIOD_IN_DAYS:
             self.status = cfg.RECOVERED_TYPE
             self.color = cfg.RECOVERED_COLOR
+            return True
 

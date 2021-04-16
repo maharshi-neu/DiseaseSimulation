@@ -113,20 +113,21 @@ class Simulator:
         ip = self.all_container[i]
         for j in range(i + 1, len(self.all_container)):
             jp = self.all_container[j]
-            condition = (jp.status == cfg.INFECTED_TYPE) + (ip.status == cfg.INFECTED_TYPE)
-            if condition == 1:
-                d = euclidean_distance(ip, jp)
-                if diameter >= d:
-                    if jp.status == cfg.INFECTED_TYPE:
-                        ip.infect(jp, self.day)
-                        newly_infected.append(ip)
+            if (jp.status != cfg.RECOVERED_TYPE != ip.status):
+                condition = (jp.status == cfg.INFECTED_TYPE) + (ip.status == cfg.INFECTED_TYPE)
+                if condition == 1:
+                    d = euclidean_distance(ip, jp)
+                    if diameter >= d:
+                        if jp.status == cfg.INFECTED_TYPE:
+                            ip.infect(jp, self.day)
+                            newly_infected.append(ip)
+                        else:
+                            jp.infect(ip, self.day)
+                            newly_infected.append(jp)
                     else:
-                        jp.infect(ip, self.day)
-                        newly_infected.append(jp)
+                        break
                 else:
                     break
-            else:
-                break
 
         return newly_infected
 
@@ -151,11 +152,15 @@ class Simulator:
                     infected.infected_particles = list()
                 i += 1
 
-    def update_containers(self, newly_infected):
+    def update_containers(self, newly_infected, newly_recovered):
         if newly_infected:
             self.susceptible_container = [
-                    sus for sus in self.susceptible_container if not sus.status == cfg.INFECTED_TYPE]
+                    sus for sus in self.susceptible_container if sus.status == cfg.SUSCEPTIBLE_TYPE]
             self.infected_container.extend(newly_infected)
+        if newly_recovered:
+            self.infected_container = [
+                    inf for inf in self.infected_container if inf.status == cfg.INFECTED_TYPE]
+            self.recovered_container.extend(newly_recovered)
 
     def trace_line(self, p):
         if p.is_infected():
@@ -217,6 +222,7 @@ class Simulator:
         self.all_container.sort(key=lambda p: p.x)
 
         newly_infected = list()
+        newly_recovered = list()
         self.contact = 0
         self.time = 0
         for pi in range(len(self.all_container)):
@@ -231,18 +237,19 @@ class Simulator:
 
             # render ------
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
-            p.recover(self.day)
+            if(p.status == cfg.INFECTED_TYPE and p.recover(self.day)):
+                newly_recovered.append(p)
             # self.trace_line(p)
             self.move_to_quarantine()
 
         self.update_stats()
         self.render_stats()
-        self.update_containers(newly_infected)
+        self.update_containers(newly_infected, newly_recovered)
 
         self.update_infection_timeseries()
         Ro = calculate_r_naught(self.infection_timeseries)
         self.BETA.append(Ro)
-        display_text(self.window, self.font, Ro, 10, 20)
+        display_text(self.window, self.font, 'Ro {}'.format(Ro), 10, 20)
 
         pygame.display.update()
 
@@ -251,14 +258,6 @@ class Simulator:
             self.process_input()
             self.update_and_render()
             self.clock.tick(self.clock_tick)
-
-            # if len(self.infected_container) == self.T:
-            #     # import matplotlib.pyplot as plt
-            #     # print((self.BETA))
-            #     print(np.average(self.BETA))
-            #     # plt.plot(self.BETA)
-            #     # plt.show()
-            #     # break
 
         pygame.quit()
 
