@@ -1,7 +1,9 @@
 import pygame
 import numpy as np
 
-from . import Particle, cfg
+from . import (Particle, cfg, calculate_r_naught,
+        bounce, build_walls, random_coord, draw_walls,
+        draw_line, display_text, euclidean_distance)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
 import os
@@ -27,21 +29,21 @@ class Simulator:
 
         pygame.display.set_caption(cfg.GAME_TITLE)
 
-        self.X, self.Y = cfg.GAME_WIDTH, cfg.GAME_HEIGHT
+        self.X = cfg.GAME_WIDTH
+        self.Y = cfg.GAME_HEIGHT
+
+        self.main_x = self.X
+        self.main_y = self.Y
+
+        self.wall_width = cfg.WALL_SIZE
+
+        if cfg.QUARANTINE:
+            self.main_x = self.X - cfg.QUARANTINE_CENTRE_WIDTH
+            self.quarantine_centre_wall_vector = build_walls(
+                    self.wall_width, self.main_x, self.X, 0, cfg.QUARANTINE_CENTRE_HEIGHT)
 
         # Wall co-ordinates
-        self.wall_width = cfg.WALL_SIZE
-        self.wall_left = self.wall_width
-        self.wall_top = self.wall_width
-        self.wall_right =  self.X - self.wall_width
-        self.wall_bottom = self.Y - self.wall_width
-
-        self.wall_vector = [
-                self.wall_left,
-                self.wall_top,
-                self.wall_right,
-                self.wall_bottom
-        ]
+        self.wall_vector = build_walls(self.wall_width, 0, self.main_x, 0, self.main_y)
 
         self.window = pygame.display.set_mode((self.X, self.Y))
 
@@ -52,39 +54,21 @@ class Simulator:
         self.recovered_container = list()
         self.all_container = list()
 
-        self.n_susceptible = cfg.TOTAL - cfg.I0 - cfg.R0
+        self.n_susceptible = cfg.POPULATION - cfg.I0 - cfg.R0
         self.n_infected = cfg.I0
         self.n_recovered = cfg.R0
-        self.T = cfg.TOTAL
-        self.beta = 2
-        self.gamma = 20 / self.T
+        self.T = cfg.POPULATION
 
-        self.font = pygame.font.SysFont("Arial", 18)
+        self.font = pygame.font.SysFont("Arial", 12)
 
         self.init_groups()
 
-    def draw_walls(self):
-        wall_color = (50, 0, 150) # RGB
-        # left wall
-        leftRect = pygame.Rect(0, 0, self.wall_left, self.Y) # left, top, width, height
-        pygame.draw.rect(self.window, wall_color, leftRect)
-        # top wall
-        topRect = pygame.Rect(0, 0, self.X, self.wall_top) # left, top, width, height
-        pygame.draw.rect(self.window, wall_color, topRect)
-        # right wall
-        rightRect = pygame.Rect(self.wall_right, 0, self.wall_right, self.Y) # left, top, width, height
-        pygame.draw.rect(self.window, wall_color, rightRect)
-        # bottom wall
-        bottomRect = pygame.Rect(0, self.wall_bottom, self.X, self.wall_bottom) # left, top, width, height
-        pygame.draw.rect(self.window, wall_color, bottomRect)
+        self.day = 1
+        self.tick = 0
+        self.init_render_stats()
 
-    def random_x(self):
-        r2 = cfg.PARTICLE_RADIUS * 2
-        return np.random.randint(r2, self.X - r2)
-
-    def random_y(self):
-        r2 = cfg.PARTICLE_RADIUS * 2
-        return np.random.randint(r2, self.Y - r2)
+        self.infection_timeseries = list()
+        self.BETA = list()
 
     def init_groups(self):
         min_ct = self.clock_tick / 2
@@ -93,31 +77,33 @@ class Simulator:
         for _ in range(self.n_susceptible):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
-                    self.random_x(), self.random_y(), cfg.SUSCEPTIBLE_TYPE, self.beta, self.gamma,
+                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
+                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.SUSCEPTIBLE_TYPE,
                     color=cfg.SUSCEPTIBLE_COLOR, clock_tick=fps)
+            p.my_boundries = self.wall_vector
             self.susceptible_container.append(p)
             self.all_container.append(p)
 
         for _ in range(self.n_infected):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
-                    self.random_x(), self.random_y(), cfg.INFECTED_TYPE, self.beta, self.gamma,
+                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
+                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.INFECTED_TYPE,
                     color=cfg.INFECTED_COLOR, clock_tick=fps)
+            p.my_boundries = self.wall_vector
             self.infected_container.append(p)
+            self.infected_since = 0
             self.all_container.append(p)
 
         for _ in range(self.n_recovered):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
-                    self.random_x(), self.random_y(), cfg.RECOVERED_TYPE, self.beta, self.gamma,
+                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
+                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.RECOVERED_TYPE,
                     color=cfg.RECOVERED_COLOR, clock_tick=fps)
+            p.my_boundries = self.wall_vector
             self.infected_container.append(p)
             self.all_container.append(p)
-
-    def euclidean_distance(self, particle, other_particle):
-        x0, y0 = particle.x, particle.y
-        x1, y1 = other_particle.x, other_particle.y
-        return np.sqrt(np.square(x1 - x0) + np.square(y1 - y0))
 
     def handle_particle_collision(self, i):
         # sweep n prune
@@ -129,24 +115,41 @@ class Simulator:
             jp = self.all_container[j]
             condition = (jp.status == cfg.INFECTED_TYPE) + (ip.status == cfg.INFECTED_TYPE)
             if condition == 1:
-                d = self.euclidean_distance(ip, jp)
+                d = euclidean_distance(ip, jp)
                 if diameter >= d:
                     if jp.status == cfg.INFECTED_TYPE:
-                        ip.infect(jp)
+                        ip.infect(jp, self.day)
                         newly_infected.append(ip)
                     else:
-                        jp.infect(ip)
+                        jp.infect(ip, self.day)
                         newly_infected.append(jp)
                 else:
                     break
             else:
                 break
+
         return newly_infected
 
     def update_fps(self):
         fps = str(int(self.clock.get_fps()))
-        fps_text = self.font.render(fps, 1, pygame.Color("coral"))
-        return fps_text
+        return fps
+
+    def update_time(self):
+        self.day = np.round(self.tick / cfg.DAY_IN_CLOCK_TICK, 2)
+        return 'Day {}'.format(self.day)
+
+    def move_to_quarantine(self):
+        if cfg.QUARANTINE:
+            i = 0
+            while i < len(self.infected_container):
+                infected = self.infected_container[i]
+
+                if len(infected.infected_particles) >= round(cfg.BETA):
+                    infected.x = (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x
+                    infected.y = (cfg.QUARANTINE_CENTRE_HEIGHT / 2)
+                    infected.my_boundries = self.quarantine_centre_wall_vector
+                    infected.infected_particles = list()
+                i += 1
 
     def update_containers(self, newly_infected):
         if newly_infected:
@@ -154,41 +157,108 @@ class Simulator:
                     sus for sus in self.susceptible_container if not sus.status == cfg.INFECTED_TYPE]
             self.infected_container.extend(newly_infected)
 
-    def update(self):
-        for p in self.all_container:
-            p.update_2d_vectors()
+    def trace_line(self, p):
+        if p.is_infected():
+            for i in p.infected_particles:
+                draw_line(self.window, cfg.INFECTED_COLOR, p.x, p.y, i.x, i.y)
 
-    def render(self):
+    def update_stats(self):
+        stats_height = self.stats.get_height()
+        stats_width = self.stats.get_width()
+
+        n_sus_now = len(self.susceptible_container)
+        n_inf_now = len(self.infected_container)
+        n_pop_now = len(self.all_container)
+        n_rec_now = len(self.recovered_container)
+
+        t = int((self.tick / cfg.RUN_TIME_IN_TICK) * stats_width)
+
+        y_infect = int(
+            stats_height - (n_inf_now / n_pop_now) * stats_height
+        )
+        # print(n_inf_now / n_pop_now, y_infect)
+
+        y_susceptible = int((n_sus_now / n_pop_now) * stats_height)
+
+        stats_graph = pygame.PixelArray(self.stats)
+        stats_graph[t, :y_susceptible] = pygame.Color(*cfg.SUSCEPTIBLE_COLOR)
+        stats_graph[t, y_infect:] = pygame.Color(*cfg.INFECTED_COLOR)
+
+    def init_render_stats(self):
+        stats_x, stats_y = cfg.GAME_WIDTH // 4, cfg.GAME_HEIGHT // 4
+        self.stats = pygame.Surface((stats_x, stats_y))
+        self.stats.fill(cfg.GREY)
+        self.stats.set_alpha(230)
+        self.stats_pos = (10, cfg.GAME_HEIGHT - (stats_y + 10))
+
+    def render_stats(self):
+        self.stats.unlock()
+        self.window.blit(self.stats, self.stats_pos)
+
+    def update_tick(self):
+        self.tick += 1
+
+    def update_infection_timeseries(self):
+        if self.day % 1 == 0 and len(self.infected_container) != self.T:
+            self.infection_timeseries.append(len(self.infected_container))
+
+    def update_and_render(self):
+        self.update_tick()
         self.window.fill(cfg.BACKGROUND)
-        self.draw_walls()
+        draw_walls(self.window, self.wall_vector,
+                self.wall_width, 0, 0, self.main_x, self.main_y)
+        if cfg.QUARANTINE:
+            draw_walls(self.window, self.quarantine_centre_wall_vector,
+                    self.wall_width, self.main_x, self.main_y, self.X, self.Y)
+
+        display_text(self.window, self.font, self.update_fps(), 10, 10)
+        display_text(self.window, self.font, self.update_time(), self.main_x / 2 - 10, 10)
 
         self.all_container.sort(key=lambda p: p.x)
 
         newly_infected = list()
+        self.contact = 0
+        self.time = 0
         for pi in range(len(self.all_container)):
+            # update -------
             p = self.all_container[pi]
 
-            p.bounce(self.wall_vector)
+            p.update_2d_vectors()
+            bounce(p, p.my_boundries)
 
             if pi < self.T - 1:
-                newly_infected = self.handle_particle_collision(pi)
+                newly_infected.extend(self.handle_particle_collision(pi))
 
+            # render ------
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
-            p.update_recovery_frame()
+            p.recover(self.day)
+            # self.trace_line(p)
+            self.move_to_quarantine()
 
+        self.update_stats()
+        self.render_stats()
         self.update_containers(newly_infected)
 
-        self.window.blit(self.update_fps(), (10,0))
+        self.update_infection_timeseries()
+        Ro = calculate_r_naught(self.infection_timeseries)
+        self.BETA.append(Ro)
+        display_text(self.window, self.font, Ro, 10, 20)
 
         pygame.display.update()
 
     def run(self):
-        while self.running:
+        while self.running and cfg.RUN_TIME_IN_DAYS > self.day:
             self.process_input()
-            self.update()
-            self.render()
+            self.update_and_render()
             self.clock.tick(self.clock_tick)
 
-        pygame.quit()
+            # if len(self.infected_container) == self.T:
+            #     # import matplotlib.pyplot as plt
+            #     # print((self.BETA))
+            #     print(np.average(self.BETA))
+            #     # plt.plot(self.BETA)
+            #     # plt.show()
+            #     # break
 
+        pygame.quit()
 

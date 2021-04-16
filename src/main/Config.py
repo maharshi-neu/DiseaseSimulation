@@ -5,19 +5,34 @@ class Config:
         self.GAME_WIDTH = 800
         self.GAME_HEIGHT = 600
         self.FPS = 60
+        self.DAY_IN_CLOCK_TICK = self.FPS
         self.WALL_SIZE = 5
-
-        # Initial values
-        self.TOTAL = 1000 # # of particles
-        self.I0 = 3 # initial infected
-        self.R0 = 0 # initial removed
+        self.RUN_TIME_IN_DAYS = 100
+        self.RUN_TIME_IN_TICK = self.RUN_TIME_IN_DAYS * self.DAY_IN_CLOCK_TICK
 
         self.TESTING_MODE  = True
-        self.TESTING_MODE  = False
+        # self.TESTING_MODE  = False
         if self.TESTING_MODE:
-            self.GAME_WIDTH = 100
-            self.GAME_HEIGHT = 100
-            self.TOTAL = 10
+            self.GAME_WIDTH = 300
+            self.GAME_HEIGHT = 300
+
+        # VIRUS PARAMETERS
+        self.QUARANTINE = True
+        self.QUARANTINE = False
+        self.POPULATION = 1000 # # of particles
+        self.I0 = 1 # initial infected
+        self.R0 = 0 # initial removed
+        self.BETA = 2.4 # R-value
+        self.RECOVERED_PERIOD_IN_DAYS = 14
+        self.PROBABILITY = 1
+
+        if self.QUARANTINE:
+            self.QUARANTINE_CENTRE_WIDTH = round(self.GAME_WIDTH * .3)
+            self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .3)
+            self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
+
+        if self.TESTING_MODE:
+            self.POPULATION = 100
             self.I0 = 1
 
         # Colors
@@ -29,11 +44,12 @@ class Config:
         self.GREY = (30, 30, 30)
         self.WHITE = (255, 255, 255)
         self.SICK_YELLOW = (190, 175, 50)
+        self.PURPLE = (130, 0, 130)
 
         self.PARTICLE_RADIUS = 5
         self.PARTICLE_COLOR = (0, 255, 0)
         self.PARTICLE_DISPLACEMENT = .4
-        self.PARTICLE_VELOCITY = .5
+        self.PARTICLE_VELOCITY = 1
 
         self.SUSCEPTIBLE_TYPE = 3
         self.INFECTED_TYPE = 2

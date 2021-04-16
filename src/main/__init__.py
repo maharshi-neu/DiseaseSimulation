@@ -1,3 +1,4 @@
+from .util import *
 from .Config import *
 cfg = Config()
 
