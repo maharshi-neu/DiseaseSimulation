@@ -3,7 +3,8 @@ import numpy as np
 
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
-        draw_line, display_text, euclidean_distance, bounce_particle)
+        draw_line, display_text, euclidean_distance, bounce_particle,
+        make_grid_array, grid_cell, populate_grid)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
 import os
@@ -69,6 +70,7 @@ class Simulator:
 
         self.infection_timeseries = list()
         self.BETA = list()
+        self.grid = make_grid_array(cfg.N_GRID_ROW, cfg.N_GRID_COL)
 
     def init_groups(self):
         min_ct = self.clock_tick / 2
@@ -131,6 +133,31 @@ class Simulator:
                 else:
                     break
 
+        return newly_infected
+
+    def handle_particle_collision(self):
+        self.grid = populate_grid(cfg.N_GRID_ROW, cfg.N_GRID_COL, self.grid, self.all_container, cfg.GAME_WIDTH, cfg.GAME_HEIGHT)
+        diameter = cfg.PARTICLE_RADIUS * 2
+        newly_infected = list()
+        for i in range(cfg.N_GRID_ROW):
+            for j in range(cfg.N_GRID_COL):
+                tocheck = self.grid[i][j]
+                for m in range(len(tocheck) - 1):
+                    for n in range(m, len(tocheck)):
+                        p1 = tocheck[m]
+                        p2 = tocheck[n]
+                        if (p1.status != cfg.RECOVERED_TYPE != p2.status):
+                            condition = (p1.status == cfg.INFECTED_TYPE) + (p2.status == cfg.INFECTED_TYPE)
+                            if condition == 1:
+                                d, dx, dy = euclidean_distance(p1, p2)
+                                if diameter >= d:
+                                    bounce_particle(p1, p2, dx, dy)
+                                    if p1.status == cfg.INFECTED_TYPE:
+                                        if(p2.infect(p1, self.day)):
+                                            newly_infected.append(p2)
+                                    else:
+                                        if(p1.infect(p2, self.day)):
+                                            newly_infected.append(p1)
         return newly_infected
 
     def update_fps(self):
@@ -234,8 +261,8 @@ class Simulator:
             p.update_2d_vectors()
             bounce_wall(p, p.my_boundries)
 
-            if pi < self.T - 1:
-                newly_infected.extend(self.handle_particle_collision(pi))
+            # if pi < self.T - 1:
+            #     newly_infected.extend(self.handle_particle_collision(pi))
 
             # render ------
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
@@ -243,6 +270,8 @@ class Simulator:
                 newly_recovered.append(p)
             # self.trace_line(p)
             self.move_to_quarantine()
+
+        newly_infected = self.handle_particle_collision()
 
         self.update_stats()
         self.render_stats()
