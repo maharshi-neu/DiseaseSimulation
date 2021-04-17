@@ -141,18 +141,13 @@ class Simulator:
         self.day = np.round(self.tick / cfg.DAY_IN_CLOCK_TICK, 2)
         return 'Day {}'.format(self.day)
 
-    def move_to_quarantine(self):
+    def move_to_quarantine(self, infected):
         if cfg.QUARANTINE:
-            i = 0
-            while i < len(self.infected_container):
-                infected = self.infected_container[i]
-
-                if len(infected.infected_particles) >= round(cfg.BETA):
-                    infected.x = (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x
-                    infected.y = (cfg.QUARANTINE_CENTRE_HEIGHT / 2)
-                    infected.my_boundries = self.quarantine_centre_wall_vector
-                    infected.infected_particles = list()
-                i += 1
+            if len(infected.infected_particles) >= round(cfg.BETA):
+                infected.x = (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x
+                infected.y = (cfg.QUARANTINE_CENTRE_HEIGHT / 2)
+                infected.my_boundries = self.quarantine_centre_wall_vector
+                infected.infected_particles = list()
 
     def update_containers(self, newly_infected, newly_recovered):
         if newly_infected:
@@ -242,7 +237,7 @@ class Simulator:
             if(p.status == cfg.INFECTED_TYPE and p.recover(self.day)):
                 newly_recovered.append(p)
             # self.trace_line(p)
-            self.move_to_quarantine()
+            self.move_to_quarantine(p)
 
         self.update_stats()
         self.render_stats()

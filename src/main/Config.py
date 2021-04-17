@@ -67,6 +67,12 @@ class Config:
             self.PARTICLE_VELOCITY = 1
 
 
+            if self.QUARANTINE:
+                self.QUARANTINE_CENTRE_WIDTH = round(self.GAME_WIDTH * .3)
+                self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .3)
+                self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
+
+
 def knuth_shuffle(n):
     for i in range(len(n)):
         j = random.randrange(i, len(n))
