@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import copy
 
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
@@ -136,12 +137,13 @@ class Simulator:
         return newly_infected
 
     def handle_particle_collision(self):
-        self.grid = populate_grid(cfg.N_GRID_ROW, cfg.N_GRID_COL, self.grid, self.all_container, cfg.GAME_WIDTH, cfg.GAME_HEIGHT)
+        grid = copy.deepcopy(make_grid_array(cfg.N_GRID_ROW, cfg.N_GRID_COL))
+        grid = populate_grid(cfg.N_GRID_ROW, cfg.N_GRID_COL, grid, self.all_container, cfg.GAME_WIDTH, cfg.GAME_HEIGHT)
         diameter = cfg.PARTICLE_RADIUS * 2
         newly_infected = list()
         for i in range(cfg.N_GRID_ROW):
             for j in range(cfg.N_GRID_COL):
-                tocheck = self.grid[i][j]
+                tocheck = grid[i][j]
                 for m in range(len(tocheck) - 1):
                     for n in range(m, len(tocheck)):
                         p1 = tocheck[m]

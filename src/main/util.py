@@ -98,7 +98,6 @@ def calculate_r_naught(infection_timeseries):
 
 @lru_cache()
 def make_grid_array(nrow, ncol):
-    print(1)
     grid = dict()
     for r in range(nrow):
         grid[r] = dict()
