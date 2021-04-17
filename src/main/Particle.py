@@ -27,6 +27,7 @@ class Particle:
         self.infected_particles = list()
         self.my_boundries = dict()
         self.infected_since = 0
+        self.grid = []
 
     def update_circumference_coordinates(self):
         self.top = abs(self.y) - self.radius
@@ -72,4 +73,10 @@ class Particle:
             self.status = cfg.RECOVERED_TYPE
             self.color = cfg.RECOVERED_COLOR
             return True
+
+    def update_grid(self, row_col):
+        if self.grid != row_col:
+            old_row_col = self.grid
+            self.grid = row_col
+            return old_row_col
 

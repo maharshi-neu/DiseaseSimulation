@@ -5,7 +5,7 @@ import copy
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
         draw_line, display_text, euclidean_distance, bounce_particle,
-        make_grid_array, grid_cell, populate_grid)
+        make_grid_array, which_grid)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
 import os
@@ -63,6 +63,10 @@ class Simulator:
 
         self.font = pygame.font.SysFont("Arial", 12)
 
+        self.grid = make_grid_array(cfg.N_GRID_ROW, cfg.N_GRID_COL)
+        self.cell_size_w = (cfg.GAME_WIDTH / cfg.N_GRID_COL)
+        self.cell_size_h = (cfg.GAME_HEIGHT / cfg.N_GRID_ROW)
+
         self.init_groups()
 
         self.day = 1
@@ -71,7 +75,6 @@ class Simulator:
 
         self.infection_timeseries = list()
         self.BETA = list()
-        self.grid = make_grid_array(cfg.N_GRID_ROW, cfg.N_GRID_COL)
 
     def init_groups(self):
         min_ct = self.clock_tick / 2
@@ -79,34 +82,46 @@ class Simulator:
 
         for _ in range(self.n_susceptible):
             fps = np.random.randint(min_ct, max_ct)
+            x = random_coord(cfg.PARTICLE_RADIUS, self.main_x)
+            y = random_coord(cfg.PARTICLE_RADIUS, self.main_y)
             p = Particle(
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.SUSCEPTIBLE_TYPE,
+                    x, y, cfg.SUSCEPTIBLE_TYPE,
                     color=cfg.SUSCEPTIBLE_COLOR, clock_tick=fps)
             p.my_boundries = self.wall_vector
             self.susceptible_container.append(p)
             self.all_container.append(p)
+            row_col = which_grid(self.cell_size_w, x, self.cell_size_h, y)
+            p.grid = row_col
+            self.grid[row_col[0]][row_col[1]].append(p)
 
         for _ in range(self.n_infected):
             fps = np.random.randint(min_ct, max_ct)
+            x = random_coord(cfg.PARTICLE_RADIUS, self.main_x)
+            y = random_coord(cfg.PARTICLE_RADIUS, self.main_y)
             p = Particle(
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.INFECTED_TYPE,
+                    x, y, cfg.INFECTED_TYPE,
                     color=cfg.INFECTED_COLOR, clock_tick=fps)
             p.my_boundries = self.wall_vector
             self.infected_container.append(p)
             self.infected_since = 0
             self.all_container.append(p)
+            row_col = which_grid(self.cell_size_w, x, self.cell_size_h, y)
+            p.grid = row_col
+            self.grid[row_col[0]][row_col[1]].append(p)
 
         for _ in range(self.n_recovered):
             fps = np.random.randint(min_ct, max_ct)
+            x = random_coord(cfg.PARTICLE_RADIUS, self.main_x)
+            y = random_coord(cfg.PARTICLE_RADIUS, self.main_y)
             p = Particle(
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.RECOVERED_TYPE,
+                    x, y, cfg.RECOVERED_TYPE,
                     color=cfg.RECOVERED_COLOR, clock_tick=fps)
             p.my_boundries = self.wall_vector
             self.infected_container.append(p)
             self.all_container.append(p)
+            row_col = which_grid(self.cell_size_w, x, self.cell_size_h, y)
+            p.grid = row_col
+            self.grid[row_col[0]][row_col[1]].append(p)
 
     def handle_particle_collision(self, i):
         # sweep n prune
@@ -137,13 +152,11 @@ class Simulator:
         return newly_infected
 
     def handle_particle_collision(self):
-        grid = copy.deepcopy(make_grid_array(cfg.N_GRID_ROW, cfg.N_GRID_COL))
-        grid = populate_grid(cfg.N_GRID_ROW, cfg.N_GRID_COL, grid, self.all_container, cfg.GAME_WIDTH, cfg.GAME_HEIGHT)
         diameter = cfg.PARTICLE_RADIUS * 2
         newly_infected = list()
         for i in range(cfg.N_GRID_ROW):
             for j in range(cfg.N_GRID_COL):
-                tocheck = grid[i][j]
+                tocheck = self.grid[i][j]
                 for m in range(len(tocheck) - 1):
                     for n in range(m, len(tocheck)):
                         p1 = tocheck[m]
@@ -238,6 +251,10 @@ class Simulator:
         if self.day % 1 == 0 and len(self.infected_container) != self.T:
             self.infection_timeseries.append(len(self.infected_container))
 
+    def update_the_grid(self, p, old_row_col):
+        self.grid[old_row_col[0]][old_row_col[1]].remove(p)
+        self.grid[p.grid[0]][p.grid[1]].append(p)
+
     def update_and_render(self):
         self.update_tick()
         self.window.fill(cfg.BACKGROUND)
@@ -263,6 +280,11 @@ class Simulator:
             p.update_2d_vectors()
             bounce_wall(p, p.my_boundries)
 
+            row_col = which_grid(self.cell_size_w, p.x, self.cell_size_h, p.y)
+            old_row_col = p.update_grid(row_col)
+            if (old_row_col):
+                self.update_the_grid(p, old_row_col)
+
             # if pi < self.T - 1:
             #     newly_infected.extend(self.handle_particle_collision(pi))
 
@@ -270,8 +292,9 @@ class Simulator:
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
             if(p.status == cfg.INFECTED_TYPE and p.recover(self.day)):
                 newly_recovered.append(p)
+
             # self.trace_line(p)
-            self.move_to_quarantine()
+            # self.move_to_quarantine()
 
         newly_infected = self.handle_particle_collision()
 

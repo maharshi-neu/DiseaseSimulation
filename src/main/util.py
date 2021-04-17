@@ -1,6 +1,5 @@
 import numpy as np
 import pygame
-from functools import lru_cache
 
 def random_angle():
     return np.random.uniform(0, np.pi * 2)
@@ -96,7 +95,6 @@ def calculate_r_naught(infection_timeseries):
     r = np.diff(infection_timeseries) / np.diff(infection_timeseries, prepend=0)[:len(infection_timeseries)-1]
     return round(r[-1], 2)
 
-@lru_cache()
 def make_grid_array(nrow, ncol):
     grid = dict()
     for r in range(nrow):
@@ -106,26 +104,7 @@ def make_grid_array(nrow, ncol):
 
     return grid
 
-@lru_cache()
-def grid_cell(r, c, nrow, ncol, width, height):
-    cell_w = (width / ncol)
-    cell_h = (height / nrow)
-
-    x0, y0 = c * cell_w, r * cell_h
-    x1, y1 = (c + 1) * cell_w, (r + 1) * cell_h
-    return x0, y0, x1, y1
-
-
-def populate_grid(nrow, ncol, grid, particles, width, height):
-    done = set()
-    for i in range(nrow):
-        for j in range(ncol):
-            for p in particles:
-                if p in done:
-                    continue
-
-                x0, y0, x1, y1 = grid_cell(i, j, nrow, ncol, width, height)
-                if (p.x >= x0 and p.y >= y0) and (p.x <= x1 and p.y <= y1):
-                    grid[i][j].append(p)
-                    done.add(p)
-    return grid
+def which_grid(cell_size_w, x, cell_size_h, y):
+    cell_x = int(x / cell_size_w)
+    cell_y = int(y / cell_size_h)
+    return cell_y, cell_x

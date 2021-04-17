@@ -65,6 +65,8 @@ class Config:
             self.POPULATION = 30
             self.I0 = 1
             self.PARTICLE_VELOCITY = 1
+            self.N_GRID_ROW = 5
+            self.N_GRID_COL = 6
 
 
 def knuth_shuffle(n):
