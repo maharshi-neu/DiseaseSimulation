@@ -1,3 +1,4 @@
+
 class Config:
     def __init__(self):
         # Game setup
@@ -9,12 +10,8 @@ class Config:
         self.WALL_SIZE = 5
         self.RUN_TIME_IN_DAYS = 100
         self.RUN_TIME_IN_TICK = self.RUN_TIME_IN_DAYS * self.DAY_IN_CLOCK_TICK
-
-        self.TESTING_MODE  = True
-        # self.TESTING_MODE  = False
-        if self.TESTING_MODE:
-            self.GAME_WIDTH = 300
-            self.GAME_HEIGHT = 300
+        self.N_GRID_ROW = 10
+        self.N_GRID_COL = 10
 
         # VIRUS PARAMETERS
         self.QUARANTINE = True
@@ -24,16 +21,12 @@ class Config:
         self.R0 = 0 # initial removed
         self.BETA = 2.4 # R-value
         self.RECOVERED_PERIOD_IN_DAYS = 14
-        self.PROBABILITY = 1
+        self.TRANSMISSION_PROBABILITY = .3
 
         if self.QUARANTINE:
             self.QUARANTINE_CENTRE_WIDTH = round(self.GAME_WIDTH * .3)
             self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .3)
             self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
-
-        if self.TESTING_MODE:
-            self.POPULATION = 100
-            self.I0 = 1
 
         # Colors
         self.RED = (255, 0, 0)
@@ -62,3 +55,20 @@ class Config:
 
         self.BACKGROUND = (10, 10, 10)
 
+
+        self.TESTING_MODE  = True
+        # self.TESTING_MODE  = False
+        if self.TESTING_MODE:
+            self.GAME_WIDTH = 300
+            self.GAME_HEIGHT = 300
+
+            self.POPULATION = 30
+            self.I0 = 1
+            self.PARTICLE_VELOCITY = 1
+
+
+def knuth_shuffle(n):
+    for i in range(len(n)):
+        j = random.randrange(i, len(n))
+        n[i], [j] = n[j], n[i]
+    return n

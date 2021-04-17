@@ -2,8 +2,8 @@ import pygame
 import numpy as np
 
 from . import (Particle, cfg, calculate_r_naught,
-        bounce, build_walls, random_coord, draw_walls,
-        draw_line, display_text, euclidean_distance)
+        bounce_wall, build_walls, random_coord, draw_walls,
+        draw_line, display_text, euclidean_distance, bounce_particle)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
 import os
@@ -113,17 +113,19 @@ class Simulator:
         ip = self.all_container[i]
         for j in range(i + 1, len(self.all_container)):
             jp = self.all_container[j]
+
             if (jp.status != cfg.RECOVERED_TYPE != ip.status):
                 condition = (jp.status == cfg.INFECTED_TYPE) + (ip.status == cfg.INFECTED_TYPE)
                 if condition == 1:
-                    d = euclidean_distance(ip, jp)
+                    d, dx, dy = euclidean_distance(ip, jp)
                     if diameter >= d:
+                        bounce_particle(ip, jp, dx, dy)
                         if jp.status == cfg.INFECTED_TYPE:
-                            ip.infect(jp, self.day)
-                            newly_infected.append(ip)
+                            if(ip.infect(jp, self.day)):
+                                newly_infected.append(ip)
                         else:
-                            jp.infect(ip, self.day)
-                            newly_infected.append(jp)
+                            if(jp.infect(ip, self.day)):
+                                newly_infected.append(jp)
                     else:
                         break
                 else:
@@ -230,7 +232,7 @@ class Simulator:
             p = self.all_container[pi]
 
             p.update_2d_vectors()
-            bounce(p, p.my_boundries)
+            bounce_wall(p, p.my_boundries)
 
             if pi < self.T - 1:
                 newly_infected.extend(self.handle_particle_collision(pi))

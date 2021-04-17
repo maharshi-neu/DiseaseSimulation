@@ -58,11 +58,14 @@ class Particle:
             self.infected_particles.append(infected)
 
     def infect(self, infectee, time):
-        infectee.update_infected_count(self)
+        p = np.random.uniform(0, 1)
+        if p <= cfg.TRANSMISSION_PROBABILITY:
+            infectee.update_infected_count(self)
 
-        self.status = cfg.INFECTED_TYPE
-        self.color = cfg.INFECTED_COLOR
-        self.infected_since = time
+            self.status = cfg.INFECTED_TYPE
+            self.color = cfg.INFECTED_COLOR
+            self.infected_since = time
+            return True
 
     def recover(self, day):
         if self.is_infected() and (day - self.infected_since) >= cfg.RECOVERED_PERIOD_IN_DAYS:

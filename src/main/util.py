@@ -4,7 +4,18 @@ import pygame
 def random_angle():
     return np.random.uniform(0, np.pi * 2)
 
-def bounce(particle, wall_vector):
+def bounce_particle(particle, other_particle, dx, dy):
+    tangent = np.arctan2(dx, dy)
+    particle.angle = 2 * tangent - particle.angle
+    other_particle.angle = 2 * tangent - other_particle.angle
+
+    angle = 0.5 * np.pi + tangent
+    particle.x += np.sin(angle)
+    particle.y -= np.cos(angle)
+    other_particle.x -= np.sin(angle)
+    other_particle.y += np.cos(angle)
+
+def bounce_wall(particle, wall_vector):
     """
     Discrete collision detection (has tunneling issue.. not a problem with particles :P)
     """
@@ -61,9 +72,9 @@ def display_text(window, font, txt, x, y, color="coral"):
     window.blit(tr, (x, y))
 
 def euclidean_distance(particle, other_particle):
-    x0, y0 = particle.x, particle.y
-    x1, y1 = other_particle.x, other_particle.y
-    return np.sqrt(np.square(x1 - x0) + np.square(y1 - y0))
+    dx = particle.x - other_particle.x
+    dy = particle.y - other_particle.y
+    return np.sqrt(np.square(dx) + np.square(dy)), dx, dy
 
 def calculate_r_naught(infection_timeseries):
     """
