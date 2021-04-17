@@ -76,22 +76,16 @@ def euclidean_distance(particle, other_particle):
     dy = particle.y - other_particle.y
     return np.sqrt(np.square(dx) + np.square(dy)), dx, dy
 
-def calculate_r_naught(infection_timeseries):
-    """
-        Transmissibility
-        r = new_infections / contact
+def calculate_r_naught(diff_infection_timeseries, prev_Ro):
+    if not diff_infection_timeseries or len(diff_infection_timeseries) == 1:
+        return 0.0
 
-        Avg. rate of contact
-        c = contact / time
+    prev_inf = diff_infection_timeseries[-2]
+    now_inf = diff_infection_timeseries[-1]
+    if prev_inf != 0 and now_inf != 0:
+        r = now_inf / prev_inf
+    else:
+        r = prev_Ro
 
-        Duration of infectiousness
-        d = time / infection
-
-        Ro = r * c * d
-    """
-    # TODO improve algorithm
-    if not infection_timeseries or len(infection_timeseries) == 1:
-        return 0
-    r = np.diff(infection_timeseries) / np.diff(infection_timeseries, prepend=0)[:len(infection_timeseries)-1]
-    return round(r[-1], 2)
+    return round(r, 2)
 

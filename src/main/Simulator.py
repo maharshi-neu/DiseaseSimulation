@@ -68,7 +68,9 @@ class Simulator:
         self.init_render_stats()
 
         self.infection_timeseries = list()
+        self.diff_infection_timeseries = list()
         self.BETA = list()
+        self.Ro = 0.0
 
     def init_groups(self):
         min_ct = self.clock_tick / 2
@@ -203,6 +205,13 @@ class Simulator:
     def update_infection_timeseries(self):
         if self.day % 1 == 0 and len(self.infected_container) != self.T:
             self.infection_timeseries.append(len(self.infected_container))
+            if len(self.infection_timeseries) > 1:
+                self.diff_infection_timeseries.append(
+                        (len(self.infected_container) - self.infection_timeseries[-2])
+                )
+            else:
+                self.diff_infection_timeseries.append(len(self.infected_container))
+
 
     def update_and_render(self):
         self.update_tick()
@@ -213,8 +222,8 @@ class Simulator:
             draw_walls(self.window, self.quarantine_centre_wall_vector,
                     self.wall_width, self.main_x, self.main_y, self.X, self.Y)
 
-        display_text(self.window, self.font, self.update_fps(), 10, 10)
-        display_text(self.window, self.font, self.update_time(), self.main_x / 2 - 10, 10)
+        day = self.update_time()
+        fps = self.update_fps()
 
         self.all_container.sort(key=lambda p: p.x)
 
@@ -244,9 +253,12 @@ class Simulator:
         self.update_containers(newly_infected, newly_recovered)
 
         self.update_infection_timeseries()
-        Ro = calculate_r_naught(self.infection_timeseries)
-        self.BETA.append(Ro)
-        display_text(self.window, self.font, 'Ro {}'.format(Ro), 10, 20)
+        self.Ro = calculate_r_naught(self.diff_infection_timeseries, self.Ro)
+        self.BETA.append(self.Ro)
+
+        display_text(self.window, self.font, fps, 10, 10)
+        display_text(self.window, self.font, day, self.main_x / 2 - 10, 10)
+        display_text(self.window, self.font, 'Ro {}'.format(self.Ro), 10, 20)
 
         pygame.display.update()
 
