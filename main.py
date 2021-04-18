@@ -8,6 +8,7 @@ class GUI_Functions():
         pass
 
     def simulatecode(self):
+        # Runs a Simulation Code
         sim = Simulator()
         sim.run()
 
