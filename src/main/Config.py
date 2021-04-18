@@ -58,7 +58,9 @@ class Config:
         self.REMOVED_TYPE = 0
 
         self.SUSCEPTIBLE_COLOR = self.LIGHTGREEN
+        self.MASKED_SUS_COLOR = self.WHITE # self.DARKGREEN
         self.INFECTED_COLOR = self.RED
+        self.MASKED_INF_COLOR = self.LIGHTRED
         self.RECOVERED_COLOR = self.GREY
 
         self.BACKGROUND = (10, 10, 10)
