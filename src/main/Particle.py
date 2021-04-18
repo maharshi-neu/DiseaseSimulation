@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 
-from . import random_angle
+from . import random_angle, uniform_probability
 from . import cfg
 
 
@@ -27,6 +27,8 @@ class Particle:
         self.infected_particles = list()
         self.my_boundries = dict()
         self.infected_since = 0
+        self.is_masked = False
+        self.trans_probab = cfg.TRANSMISSION_PROBABILITY
 
     def update_circumference_coordinates(self):
         self.top = abs(self.y) - self.radius
@@ -57,14 +59,33 @@ class Particle:
         if self.is_infected():
             self.infected_particles.append(infected)
 
-    def infect(self, infectee, time):
-        p = np.random.uniform(0, 1)
-        if p <= cfg.TRANSMISSION_PROBABILITY:
+    def _infect(self, infectee, time, probab):
+        p = uniform_probability()
+        if p <= probab:
             infectee.update_infected_count(self)
 
             self.status = cfg.INFECTED_TYPE
-            self.color = cfg.INFECTED_COLOR
             self.infected_since = time
+            return True
+
+    def infect(self, infectee, time):
+        clr = cfg.INFECTED_COLOR
+        if not cfg.MASKS:
+            t_p = cfg.TRANSMISSION_PROBABILITY
+        else:
+            if self.is_masked and infectee.is_masked:
+                t_p = cfg.MASK_MASK
+                clr = cfg.MASKED_INF_COLOR
+            elif self.is_masked and not infectee.is_masked:
+                t_p = cfg.MASK_NOMASK
+            elif not self.is_masked and infectee.is_masked:
+                t_p = cfg.NOMASK_MASK
+                clr = cfg.MASKED_INF_COLOR
+            else:
+                t_p = cfg.TRANSMISSION_PROBABILITY
+
+        if self._infect(infectee, time, t_p):
+            self.color = clr
             return True
 
     def recover(self, day):
@@ -72,4 +93,12 @@ class Particle:
             self.status = cfg.RECOVERED_TYPE
             self.color = cfg.RECOVERED_COLOR
             return True
+
+    def wear_mask(self):
+        if cfg.MASKS:
+            will_it_wear = uniform_probability()
+            if will_it_wear <= cfg.RATIO_OF_POP_WITH_MASKS:
+                self.is_masked = True
+                self.color = cfg.MASKED_INF_COLOR if self.is_infected() else cfg.MASKED_SUS_COLOR
+                return
 

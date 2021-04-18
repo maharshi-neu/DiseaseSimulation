@@ -3,7 +3,8 @@ import numpy as np
 
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
-        draw_line, display_text, euclidean_distance, bounce_particle)
+        draw_line, display_text, euclidean_distance, bounce_particle,
+        uniform_probability)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
 import os
@@ -76,27 +77,31 @@ class Simulator:
         min_ct = self.clock_tick / 2
         max_ct = self.clock_tick * 2
 
+        # SUSCEPTIBLE
         for _ in range(self.n_susceptible):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
                     random_coord(cfg.PARTICLE_RADIUS, self.main_x),
                     random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.SUSCEPTIBLE_TYPE,
                     color=cfg.SUSCEPTIBLE_COLOR, clock_tick=fps)
+            p.wear_mask()
             p.my_boundries = self.wall_vector
             self.susceptible_container.append(p)
             self.all_container.append(p)
 
+        # INFECTED
         for _ in range(self.n_infected):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
                     random_coord(cfg.PARTICLE_RADIUS, self.main_x),
                     random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.INFECTED_TYPE,
                     color=cfg.INFECTED_COLOR, clock_tick=fps)
+            p.wear_mask()
             p.my_boundries = self.wall_vector
             self.infected_container.append(p)
-            self.infected_since = 0
             self.all_container.append(p)
 
+        # RECOVERED
         for _ in range(self.n_recovered):
             fps = np.random.randint(min_ct, max_ct)
             p = Particle(
@@ -104,7 +109,7 @@ class Simulator:
                     random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.RECOVERED_TYPE,
                     color=cfg.RECOVERED_COLOR, clock_tick=fps)
             p.my_boundries = self.wall_vector
-            self.infected_container.append(p)
+            self.recovered_container.append(p)
             self.all_container.append(p)
 
     def handle_particle_collision(self, i):
