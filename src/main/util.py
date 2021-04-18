@@ -1,6 +1,8 @@
 import numpy as np
 import pygame
 
+np.random.seed(470)
+
 def random_angle():
     return np.random.uniform(0, np.pi * 2)
 
@@ -66,7 +68,7 @@ def draw_walls(window, wv, wall_width, x0, y0, x1, y1):
 def draw_line(window, color, x1, y1, x2, y2):
     pygame.draw.line(window, color, (x1, y1), (x2, y2))
 
-def display_text(window, font, txt, x, y, color="coral"):
+def display_text(window, font, txt, x, y, color="white"):
     tr = font.render(str(txt), 1, pygame.Color(color))
     window.blit(tr, (x, y))
 
@@ -101,9 +103,9 @@ def bar_chart(window, x0, y0, x1, T, data, gh):
         t = y0 + (i * diff)
         rect = pygame.Rect(
                 x0,                                  # left
-                t,                     # top
+                t,                                   # top
                 ((x1-x0) / T)  * (item[0]),          # width
                 diff                                 # height
             )
         pygame.draw.rect(window, item[1], rect)
-        display_text(window, data['font'], item[0], x0 + 10, (t + (y0/len2)), (255,255,255))
+        display_text(window, data['font'], item[0], x0 + 10, (t + (diff/2)), (255,255,255))

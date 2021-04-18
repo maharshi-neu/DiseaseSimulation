@@ -64,7 +64,7 @@ class Simulator:
 
         self.init_groups()
 
-        self.day = 1
+        self.day = 0
         self.tick = 0
         self.init_render_stats()
 
@@ -134,12 +134,12 @@ class Simulator:
             jp = self.all_container[j]
 
             if (jp.status != cfg.RECOVERED_TYPE != ip.status):
-                condition = (jp.status == cfg.INFECTED_TYPE) + (ip.status == cfg.INFECTED_TYPE)
+                condition = (jp.is_infected) + (ip.is_infected)
                 if condition == 1:
                     d, dx, dy = euclidean_distance(ip, jp)
                     if diameter >= d:
                         bounce_particle(ip, jp, dx, dy)
-                        if jp.status == cfg.INFECTED_TYPE:
+                        if jp.is_infected:
                             if(ip.infect(jp, self.day)):
                                 newly_infected.append(ip)
                         else:
@@ -160,26 +160,35 @@ class Simulator:
         self.day = np.round(self.tick / cfg.DAY_IN_CLOCK_TICK, 2)
         return 'Day {}'.format(self.day)
 
-    def move_to_quarantine(self, infected):
-        if cfg.QUARANTINE:
-            if len(infected.infected_particles) >= round(cfg.BETA):
-                infected.x = (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x
-                infected.y = (cfg.QUARANTINE_CENTRE_HEIGHT / 2)
-                infected.my_boundries = self.q_centre_wall_vector
-                infected.infected_particles = list()
+    def move_to_quarantine(self, p):
+        """
+            if Ro is low its easy to quarantine people, easy to detect
+        """
+        if not cfg.QUARANTINE or not p.is_infected or p.quarantined:
+            return
+
+        if not p.will_show_symptoms:
+            return
+
+        if (self.day - p.infected_since) > cfg.QUARANTINE_AT_DAY:
+            p.x = (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x
+            p.y = (cfg.QUARANTINE_CENTRE_HEIGHT / 2)
+            p.my_boundries = self.q_centre_wall_vector
+            p.quarantined = True
+            p.vel /= 2
 
     def update_containers(self, newly_infected, newly_recovered):
         if newly_infected:
             self.susceptible_container = [
-                    sus for sus in self.susceptible_container if sus.status == cfg.SUSCEPTIBLE_TYPE]
+                    sus for sus in self.susceptible_container if sus.is_susceptible]
             self.infected_container.extend(newly_infected)
         if newly_recovered:
             self.infected_container = [
-                    inf for inf in self.infected_container if inf.status == cfg.INFECTED_TYPE]
+                    inf for inf in self.infected_container if inf.is_infected]
             self.recovered_container.extend(newly_recovered)
 
     def trace_line(self, p):
-        if p.is_infected():
+        if p.is_infected:
             for i in p.infected_particles:
                 draw_line(self.window, cfg.INFECTED_COLOR, p.x, p.y, i.x, i.y)
 
@@ -208,7 +217,7 @@ class Simulator:
         stats_x, stats_y = cfg.GAME_WIDTH // 4, cfg.GAME_HEIGHT // 4
         self.stats = pygame.Surface((stats_x, stats_y))
         self.stats.fill(cfg.GREY)
-        self.stats.set_alpha(230)
+        self.stats.set_alpha(300)
         self.stats_pos = (10, cfg.GAME_HEIGHT - (stats_y + 10))
 
     def render_stats(self):
@@ -251,15 +260,19 @@ class Simulator:
             # update -------
             p = self.all_container[pi]
 
+            if p.is_recovered:
+                continue
+
             p.update_2d_vectors()
             bounce_wall(p, p.my_boundries)
 
             if pi < self.T - 1:
                 newly_infected.extend(self.handle_particle_collision(pi))
 
+
             # render ------
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
-            if(p.status == cfg.INFECTED_TYPE and p.recover(self.day)):
+            if(p.is_infected and p.recover(self.day)):
                 newly_recovered.append(p)
             # self.trace_line(p)
             self.move_to_quarantine(p)
@@ -271,7 +284,6 @@ class Simulator:
         self.update_infection_timeseries()
         self.Ro = calculate_r_naught(self.diff_infection_timeseries, self.Ro)
         self.BETA.append(self.Ro)
-
 
         bar_data = {
                 'S': (self.suslen, cfg.SUSCEPTIBLE_COLOR),
@@ -286,9 +298,12 @@ class Simulator:
                 cfg.QUARANTINE_CENTRE_HEIGHT, self.X,
                 self.T, bar_data, cfg.GAME_HEIGHT)
 
+        Ro_avg = np.round(np.average(self.BETA), 2)
+
         display_text(self.window, self.font, fps, 10, 10)
         display_text(self.window, self.font, day, self.main_x / 2 - 10, 10)
-        display_text(self.window, self.font, 'Ro {}'.format(self.Ro), 10, 20)
+        display_text(self.window, self.font, 'Ro {}'.format(self.Ro), 10, 25)
+        display_text(self.window, self.font, 'Ro Avg {}'.format(Ro_avg), 10, 35)
 
         pygame.display.update()
 
