@@ -51,17 +51,16 @@ def random_coord(radius, axis):
 def draw_walls(window, wv, wall_width, x0, y0, x1, y1):
     wall_color = (50, 0, 150) # RGB
     # left wall
-    leftRect = pygame.Rect(x0, y0, wv['l'], y1) # left, top, width, height
+    leftRect = pygame.Rect(x0, y0, wall_width, y1) # left, top, width, height
     pygame.draw.rect(window, wall_color, leftRect)
     # top wall
-    # top = 0 if x0 == y0 else y0
     topRect = pygame.Rect(x0, y0, x1, wv['t']) # left, top, width, height
     pygame.draw.rect(window, wall_color, topRect)
     # right wall
     rightRect = pygame.Rect(wv['r'], 0, wall_width, y1) # left, top, width, height
     pygame.draw.rect(window, wall_color, rightRect)
     # bottom wall
-    bottomRect = pygame.Rect(x0, wv['b'], x1, wv['b']) # left, top, width, height
+    bottomRect = pygame.Rect(x0, wv['b'], x1, wall_width) # left, top, width, height
     pygame.draw.rect(window, wall_color, bottomRect)
 
 def draw_line(window, color, x1, y1, x2, y2):
@@ -89,3 +88,22 @@ def calculate_r_naught(diff_infection_timeseries, prev_Ro):
 
     return round(r, 2)
 
+def uniform_probability():
+    return np.random.uniform(0, 1)
+
+def bar_chart(window, x0, y0, x1, T, data, gh):
+    bch = (gh * .3)
+
+    diff = bch / len(data['seq'])
+    len2 = len(data['seq']) * 2
+    for i, v in enumerate(data['seq']):
+        item = data[v]
+        t = y0 + (i * diff)
+        rect = pygame.Rect(
+                x0,                                  # left
+                t,                     # top
+                ((x1-x0) / T)  * (item[0]),          # width
+                diff                                 # height
+            )
+        pygame.draw.rect(window, item[1], rect)
+        display_text(window, data['font'], item[0], x0 + 10, (t + (y0/len2)), (255,255,255))

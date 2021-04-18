@@ -30,6 +30,9 @@ class Config:
         self.MASK_NOMASK = 0.125 # (10+15) / 2 .. disease patient without mask
         self.NOMASK_MASK = 0.075 # (5+10) / 2 .. disease patient with mask
 
+        self.QUARANTINE_CENTRE_WIDTH = round(self.GAME_WIDTH * .3)
+        self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .3)
+        self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
 
         # Colors
         self.RED = (255, 0, 0)
@@ -70,12 +73,11 @@ class Config:
             self.POPULATION = 30
             self.I0 = 1
             self.PARTICLE_VELOCITY = 1
+            # self.RECOVERED_PERIOD_IN_DAYS = 3
 
-
-            if self.QUARANTINE:
-                self.QUARANTINE_CENTRE_WIDTH = round(self.GAME_WIDTH * .3)
-                self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .3)
-                self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
+            self.QUARANTINE_CENTRE_WIDTH = round(self.GAME_WIDTH * .4)
+            self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .4)
+            self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
 
 
 def knuth_shuffle(n):

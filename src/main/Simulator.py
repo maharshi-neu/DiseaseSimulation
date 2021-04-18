@@ -4,7 +4,7 @@ import numpy as np
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
         draw_line, display_text, euclidean_distance, bounce_particle,
-        uniform_probability)
+        uniform_probability, bar_chart)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
 import os
@@ -38,10 +38,10 @@ class Simulator:
 
         self.wall_width = cfg.WALL_SIZE
 
-        if cfg.QUARANTINE:
-            self.main_x = self.X - cfg.QUARANTINE_CENTRE_WIDTH
-            self.quarantine_centre_wall_vector = build_walls(
-                    self.wall_width, self.main_x, self.X, 0, cfg.QUARANTINE_CENTRE_HEIGHT)
+        # if cfg.QUARANTINE:
+        self.main_x = self.X - cfg.QUARANTINE_CENTRE_WIDTH
+        self.q_centre_wall_vector = build_walls(
+                self.wall_width, self.main_x, self.X, 0, cfg.QUARANTINE_CENTRE_HEIGHT)
 
         # Wall co-ordinates
         self.wall_vector = build_walls(self.wall_width, 0, self.main_x, 0, self.main_y)
@@ -60,7 +60,7 @@ class Simulator:
         self.n_recovered = cfg.R0
         self.T = cfg.POPULATION
 
-        self.font = pygame.font.SysFont("Arial", 12)
+        self.font = pygame.font.SysFont(None, 18)
 
         self.init_groups()
 
@@ -72,6 +72,18 @@ class Simulator:
         self.diff_infection_timeseries = list()
         self.BETA = list()
         self.Ro = 0.0
+
+    @property
+    def suslen(self):
+        return len(self.susceptible_container)
+
+    @property
+    def inflen(self):
+        return len(self.infected_container)
+
+    @property
+    def reclen(self):
+        return len(self.recovered_container)
 
     def init_groups(self):
         min_ct = self.clock_tick / 2
@@ -153,7 +165,7 @@ class Simulator:
             if len(infected.infected_particles) >= round(cfg.BETA):
                 infected.x = (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x
                 infected.y = (cfg.QUARANTINE_CENTRE_HEIGHT / 2)
-                infected.my_boundries = self.quarantine_centre_wall_vector
+                infected.my_boundries = self.q_centre_wall_vector
                 infected.infected_particles = list()
 
     def update_containers(self, newly_infected, newly_recovered):
@@ -175,17 +187,16 @@ class Simulator:
         stats_height = self.stats.get_height()
         stats_width = self.stats.get_width()
 
-        n_sus_now = len(self.susceptible_container)
-        n_inf_now = len(self.infected_container)
+        n_sus_now = self.suslen
+        n_inf_now = self.inflen
         n_pop_now = len(self.all_container)
-        n_rec_now = len(self.recovered_container)
+        n_rec_now = self.reclen
 
         t = int((self.tick / cfg.RUN_TIME_IN_TICK) * stats_width)
 
         y_infect = int(
             stats_height - (n_inf_now / n_pop_now) * stats_height
         )
-        # print(n_inf_now / n_pop_now, y_infect)
 
         y_susceptible = int((n_sus_now / n_pop_now) * stats_height)
 
@@ -208,14 +219,14 @@ class Simulator:
         self.tick += 1
 
     def update_infection_timeseries(self):
-        if self.day % 1 == 0 and len(self.infected_container) != self.T:
-            self.infection_timeseries.append(len(self.infected_container))
+        if self.day % 1 == 0 and self.inflen != self.T:
+            self.infection_timeseries.append(self.inflen)
             if len(self.infection_timeseries) > 1:
                 self.diff_infection_timeseries.append(
-                        (len(self.infected_container) - self.infection_timeseries[-2])
+                        (self.inflen - self.infection_timeseries[-2])
                 )
             else:
-                self.diff_infection_timeseries.append(len(self.infected_container))
+                self.diff_infection_timeseries.append(self.inflen)
 
 
     def update_and_render(self):
@@ -223,9 +234,9 @@ class Simulator:
         self.window.fill(cfg.BACKGROUND)
         draw_walls(self.window, self.wall_vector,
                 self.wall_width, 0, 0, self.main_x, self.main_y)
-        if cfg.QUARANTINE:
-            draw_walls(self.window, self.quarantine_centre_wall_vector,
-                    self.wall_width, self.main_x, self.main_y, self.X, self.Y)
+        # Quarantine Walls
+        draw_walls(self.window, self.q_centre_wall_vector,
+                self.wall_width, self.main_x, 0, self.X, cfg.QUARANTINE_CENTRE_HEIGHT)
 
         day = self.update_time()
         fps = self.update_fps()
@@ -260,6 +271,20 @@ class Simulator:
         self.update_infection_timeseries()
         self.Ro = calculate_r_naught(self.diff_infection_timeseries, self.Ro)
         self.BETA.append(self.Ro)
+
+
+        bar_data = {
+                'S': (self.suslen, cfg.SUSCEPTIBLE_COLOR),
+                'I': (self.inflen, cfg.INFECTED_COLOR),
+                'R': (self.reclen, cfg.RECOVERED_COLOR),
+                'seq': ['S', 'I', 'R'],
+                'font': self.font,
+
+            }
+        bar_chart(
+                self.window, self.main_x,
+                cfg.QUARANTINE_CENTRE_HEIGHT, self.X,
+                self.T, bar_data, cfg.GAME_HEIGHT)
 
         display_text(self.window, self.font, fps, 10, 10)
         display_text(self.window, self.font, day, self.main_x / 2 - 10, 10)
