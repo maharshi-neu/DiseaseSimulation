@@ -44,7 +44,17 @@ class Simulator:
                 self.wall_width, self.main_x, self.X, 0, cfg.QUARANTINE_CENTRE_HEIGHT)
 
         # Wall co-ordinates
-        self.wall_vector = build_walls(self.wall_width, 0, self.main_x, 0, self.main_y)
+        self.wall_vectors = list()
+
+        self.xpart = self.main_x / cfg.COMMUNITY_COLS
+        self.ypart = self.main_y / cfg.COMMUNITY_ROWS
+
+        self.wall_vector_list = list()
+        for y in range(cfg.COMMUNITY_ROWS):
+            for x in range(cfg.COMMUNITY_COLS):
+                x0, y0 = x * self.xpart, y * self.ypart
+                x1, y1 = x0 + self.xpart, y0 + self.ypart
+                self.wall_vector_list.append(build_walls(self.wall_width, x0, x1, y0, y1))
 
         self.window = pygame.display.set_mode((self.X, self.Y))
 
@@ -85,44 +95,64 @@ class Simulator:
     def reclen(self):
         return len(self.recovered_container)
 
+    @property
+    def alllen(self):
+        return len(self.all_container)
+
     def init_groups(self):
         min_ct = self.clock_tick / 2
         max_ct = self.clock_tick * 2
 
+        w = 0
         # SUSCEPTIBLE
-        for _ in range(self.n_susceptible):
+        for i in range(self.n_susceptible):
             fps = np.random.randint(min_ct, max_ct)
+            wv = self.wall_vector_list[w]
             p = Particle(
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.SUSCEPTIBLE_TYPE,
+                    random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
+                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.SUSCEPTIBLE_TYPE,
                     color=cfg.SUSCEPTIBLE_COLOR, clock_tick=fps)
             p.wear_mask()
-            p.my_boundries = self.wall_vector
+            p.my_boundries = wv
             self.susceptible_container.append(p)
             self.all_container.append(p)
+
+            w += 1
+            if w >= len(self.wall_vector_list):
+                w = 0
 
         # INFECTED
         for _ in range(self.n_infected):
             fps = np.random.randint(min_ct, max_ct)
+            wv = self.wall_vector_list[w]
             p = Particle(
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.INFECTED_TYPE,
+                    random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
+                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.INFECTED_TYPE,
                     color=cfg.INFECTED_COLOR, clock_tick=fps)
             p.wear_mask()
-            p.my_boundries = self.wall_vector
+            p.my_boundries = wv
             self.infected_container.append(p)
             self.all_container.append(p)
+
+            w += 1
+            if w >= len(self.wall_vector_list):
+                w = 0
 
         # RECOVERED
         for _ in range(self.n_recovered):
             fps = np.random.randint(min_ct, max_ct)
+            wv = self.wall_vector_list[w]
             p = Particle(
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_x),
-                    random_coord(cfg.PARTICLE_RADIUS, self.main_y), cfg.RECOVERED_TYPE,
+                    random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
+                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.RECOVERED_TYPE,
                     color=cfg.RECOVERED_COLOR, clock_tick=fps)
-            p.my_boundries = self.wall_vector
+            p.my_boundries = wv
             self.recovered_container.append(p)
             self.all_container.append(p)
+
+            w += 1
+            if w >= len(self.wall_vector_list):
+                w = 0
 
     def handle_particle_collision(self, i):
         # sweep n prune
@@ -130,13 +160,13 @@ class Simulator:
         newly_infected = list()
 
         ip = self.all_container[i]
-        for j in range(i + 1, len(self.all_container)):
+        for j in range(i + 1, self.alllen):
             jp = self.all_container[j]
 
             if (jp.status != cfg.RECOVERED_TYPE != ip.status):
                 condition = (jp.is_infected) + (ip.is_infected)
                 if condition == 1:
-                    d, dx, dy = euclidean_distance(ip, jp)
+                    d, dx, dy = euclidean_distance(ip.x, ip.y, jp.x, jp.y)
                     if diameter >= d:
                         bounce_particle(ip, jp, dx, dy)
                         if jp.is_infected:
@@ -171,11 +201,12 @@ class Simulator:
             return
 
         if (self.day - p.infected_since) > cfg.QUARANTINE_AT_DAY:
-            p.x = (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x
-            p.y = (cfg.QUARANTINE_CENTRE_HEIGHT / 2)
-            p.my_boundries = self.q_centre_wall_vector
+            p.fly_to_in_peace(
+                    (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x,
+                    (cfg.QUARANTINE_CENTRE_HEIGHT / 2),
+                    self.q_centre_wall_vector
+            )
             p.quarantined = True
-            p.vel /= 2
 
     def update_containers(self, newly_infected, newly_recovered):
         if newly_infected:
@@ -198,7 +229,7 @@ class Simulator:
 
         n_sus_now = self.suslen
         n_inf_now = self.inflen
-        n_pop_now = len(self.all_container)
+        n_pop_now = self.alllen
         n_rec_now = self.reclen
 
         t = int((self.tick / cfg.RUN_TIME_IN_TICK) * stats_width)
@@ -217,7 +248,7 @@ class Simulator:
         stats_x, stats_y = cfg.GAME_WIDTH // 4, cfg.GAME_HEIGHT // 4
         self.stats = pygame.Surface((stats_x, stats_y))
         self.stats.fill(cfg.GREY)
-        self.stats.set_alpha(300)
+        self.stats.set_alpha(200)
         self.stats_pos = (10, cfg.GAME_HEIGHT - (stats_y + 10))
 
     def render_stats(self):
@@ -237,12 +268,43 @@ class Simulator:
             else:
                 self.diff_infection_timeseries.append(self.inflen)
 
+    def pick_lucky_winners_for_travel(self):
+        if not cfg.TRAVEL:
+            return
+
+        should_travel_happen = uniform_probability()
+        if should_travel_happen <= cfg.TRAVEL_FREQUENCY:
+
+            p1, p2 = self.all_container[0], self.all_container[0]
+            q = p1.quarantined + p2.quarantined
+
+            try_till = 3
+            i = 0
+
+            while p1.my_boundries == p2.my_boundries and q == 0:
+                c1 = np.random.randint(0, self.alllen)
+                c2 = np.random.randint(0, self.alllen)
+                p1 = self.all_container[c1]
+                p2 = self.all_container[c2]
+                q = p1.quarantined + p2.quarantined
+                i += 1
+                if i == try_till:
+                    return
+
+            tmp = p1.my_boundries
+            p1.fly_to_in_peace(p2.x, p2.y, p2.my_boundries)
+            p2.fly_to_in_peace(p1.x, p1.y, tmp)
 
     def update_and_render(self):
         self.update_tick()
         self.window.fill(cfg.BACKGROUND)
-        draw_walls(self.window, self.wall_vector,
-                self.wall_width, 0, 0, self.main_x, self.main_y)
+
+        for wv in self.wall_vector_list:
+            draw_walls(self.window, wv,
+                    self.wall_width, wv['x0'], wv['y0'], wv['x1'], wv['y1'])
+
+        self.window.fill(cfg.BACKGROUND, (self.main_x, 0, cfg.GAME_WIDTH, cfg.GAME_HEIGHT))
+
         # Quarantine Walls
         draw_walls(self.window, self.q_centre_wall_vector,
                 self.wall_width, self.main_x, 0, self.X, cfg.QUARANTINE_CENTRE_HEIGHT)
@@ -256,7 +318,7 @@ class Simulator:
         newly_recovered = list()
         self.contact = 0
         self.time = 0
-        for pi in range(len(self.all_container)):
+        for pi in range(self.alllen):
             # update -------
             p = self.all_container[pi]
 
@@ -268,7 +330,6 @@ class Simulator:
 
             if pi < self.T - 1:
                 newly_infected.extend(self.handle_particle_collision(pi))
-
 
             # render ------
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
@@ -304,6 +365,8 @@ class Simulator:
         display_text(self.window, self.font, day, self.main_x / 2 - 10, 10)
         display_text(self.window, self.font, 'Ro {}'.format(self.Ro), 10, 25)
         display_text(self.window, self.font, 'Ro Avg {}'.format(Ro_avg), 10, 35)
+
+        self.pick_lucky_winners_for_travel()
 
         pygame.display.update()
 

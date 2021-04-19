@@ -1,7 +1,7 @@
 import pygame
 import numpy as np
 
-from . import random_angle, uniform_probability
+from . import random_angle, uniform_probability, euclidean_distance
 from . import cfg
 
 
@@ -31,6 +31,7 @@ class Particle:
         self.trans_probab = cfg.TRANSMISSION_PROBABILITY
         self.quarantined = False
         self.will_show_symptoms = True
+        self.destination = None
 
     def update_circumference_coordinates(self):
         self.top = abs(self.y) - self.radius
@@ -45,7 +46,21 @@ class Particle:
         self.x += dx
         self.y -= dy
 
+    def travel_flight_mode(self):
+        d, _, _ = euclidean_distance(self.x, self.y, self.destination[0], self.destination[1])
+        if d > 10:
+            self.angle = np.arctan2(self.destination[1] - self.y, self.destination[0] - self.x)
+            self.x += np.cos(self.angle) * self.vel
+            self.y += np.sin(self.angle) * self.vel
+            self.update_circumference_coordinates()
+        else:
+            self.destination = None
+            self.vel /= 4
+
     def update_2d_vectors(self):
+        if self.destination:
+            self.travel_flight_mode()
+            return
         self.f += 1
         if self.f > self.clock_tick * 2:
             self.f = 0
@@ -119,4 +134,9 @@ class Particle:
                 self.is_masked = True
                 self.color = cfg.MASKED_INF_COLOR if self.is_infected else cfg.MASKED_SUS_COLOR
                 return
+
+    def fly_to_in_peace(self, x, y, new_walls):
+        self.destination = (x, y)
+        self.my_boundries = new_walls
+        self.vel *= 4
 

@@ -23,6 +23,14 @@ class Config:
         self.RECOVERED_PERIOD_IN_DAYS = 14
         self.TRANSMISSION_PROBABILITY = 0.90
 
+        self.COMMUNITY_ROWS = 1
+        self.COMMUNITY_COLS = 1
+        self.COMMUNITY_ROWS = 2
+        self.COMMUNITY_COLS = 3
+
+        self.TRAVEL = True
+        self.TRAVEL_FREQUENCY = .01
+
         self.SYMPTOMATIC_ASYMPTOMATIC = False
         self.SYM_ASYM_PROBAB = 0.5
 

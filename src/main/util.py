@@ -1,7 +1,7 @@
 import numpy as np
 import pygame
 
-np.random.seed(470)
+# np.random.seed(470)
 
 def random_angle():
     return np.random.uniform(0, np.pi * 2)
@@ -21,6 +21,8 @@ def bounce_wall(particle, wall_vector):
     """
     Discrete collision detection (has tunneling issue.. not a problem with particles :P)
     """
+    if particle.destination:
+        return
     if particle.right >= wall_vector['r']:
         particle.angle = -particle.angle
 
@@ -43,12 +45,16 @@ def build_walls(wall_width, x_start, x_end, y_start, y_end):
         'l': wall_left,
         't': wall_top,
         'r': wall_right,
-        'b': wall_bottom
+        'b': wall_bottom,
+        'x0': x_start,
+        'y0': y_start,
+        'x1': x_end,
+        'y1': y_end
     }
 
-def random_coord(radius, axis):
+def random_coord(a0, a1, radius):
     d = radius * 2
-    return np.random.randint(d, axis - d)
+    return np.random.randint(a0 + d, a1 - d)
 
 def draw_walls(window, wv, wall_width, x0, y0, x1, y1):
     wall_color = (50, 0, 150) # RGB
@@ -56,7 +62,7 @@ def draw_walls(window, wv, wall_width, x0, y0, x1, y1):
     leftRect = pygame.Rect(x0, y0, wall_width, y1) # left, top, width, height
     pygame.draw.rect(window, wall_color, leftRect)
     # top wall
-    topRect = pygame.Rect(x0, y0, x1, wv['t']) # left, top, width, height
+    topRect = pygame.Rect(x0, y0, x1, wall_width) # left, top, width, height
     pygame.draw.rect(window, wall_color, topRect)
     # right wall
     rightRect = pygame.Rect(wv['r'], 0, wall_width, y1) # left, top, width, height
@@ -72,9 +78,9 @@ def display_text(window, font, txt, x, y, color="white"):
     tr = font.render(str(txt), 1, pygame.Color(color))
     window.blit(tr, (x, y))
 
-def euclidean_distance(particle, other_particle):
-    dx = particle.x - other_particle.x
-    dy = particle.y - other_particle.y
+def euclidean_distance(x0, y0, x1, y1):
+    dx = x1 - x0
+    dy = y1 - y0
     return np.sqrt(np.square(dx) + np.square(dy)), dx, dy
 
 def calculate_r_naught(diff_infection_timeseries, prev_Ro):
