@@ -33,6 +33,10 @@ class Particle:
         self.will_show_symptoms = True
         self.destination = None
 
+    @property
+    def is_travelling(self):
+        return True if self.destination else False
+
     def update_circumference_coordinates(self):
         self.top = abs(self.y) - self.radius
         self.right = abs(self.x) + self.radius
@@ -58,7 +62,7 @@ class Particle:
             self.vel /= 4
 
     def update_2d_vectors(self):
-        if self.destination:
+        if self.is_travelling:
             self.travel_flight_mode()
             return
         self.f += 1

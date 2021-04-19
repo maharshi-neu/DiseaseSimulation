@@ -163,7 +163,8 @@ class Simulator:
         for j in range(i + 1, self.alllen):
             jp = self.all_container[j]
 
-            if (jp.status != cfg.RECOVERED_TYPE != ip.status):
+            travelling = jp.is_travelling + ip.is_travelling
+            if (jp.status != cfg.RECOVERED_TYPE != ip.status) and not travelling:
                 condition = (jp.is_infected) + (ip.is_infected)
                 if condition == 1:
                     d, dx, dy = euclidean_distance(ip.x, ip.y, jp.x, jp.y)
