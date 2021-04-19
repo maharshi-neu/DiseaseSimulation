@@ -56,19 +56,19 @@ def random_coord(a0, a1, radius):
     d = radius * 2
     return np.random.randint(a0 + d, a1 - d)
 
-def draw_walls(window, wv, wall_width, x0, y0, x1, y1):
+def draw_walls(window, wv, wall_width):
     wall_color = (50, 0, 150) # RGB
     # left wall
-    leftRect = pygame.Rect(x0, y0, wall_width, y1) # left, top, width, height
+    leftRect = pygame.Rect(wv['x0'], wv['y0'], wall_width, wv['y1']) # left, top, width, height
     pygame.draw.rect(window, wall_color, leftRect)
     # top wall
-    topRect = pygame.Rect(x0, y0, x1, wall_width) # left, top, width, height
+    topRect = pygame.Rect(wv['x0'], wv['y0'], wv['x1'], wall_width) # left, top, width, height
     pygame.draw.rect(window, wall_color, topRect)
     # right wall
-    rightRect = pygame.Rect(wv['r'], 0, wall_width, y1) # left, top, width, height
+    rightRect = pygame.Rect(wv['r'], wv['t'], wall_width, wv['y1']) # left, top, width, height
     pygame.draw.rect(window, wall_color, rightRect)
     # bottom wall
-    bottomRect = pygame.Rect(x0, wv['b'], x1, wall_width) # left, top, width, height
+    bottomRect = pygame.Rect(wv['x0'], wv['b'], wv['x1'], wall_width) # left, top, width, height
     pygame.draw.rect(window, wall_color, bottomRect)
 
 def draw_line(window, color, x1, y1, x2, y2):
@@ -99,9 +99,7 @@ def calculate_r_naught(diff_infection_timeseries, prev_Ro):
 def uniform_probability():
     return np.random.uniform(0, 1)
 
-def bar_chart(window, x0, y0, x1, T, data, gh):
-    bch = (gh * .3)
-
+def bar_chart(window, x0, y0, x1, T, data, bch):
     diff = bch / len(data['seq'])
     len2 = len(data['seq']) * 2
     for i, v in enumerate(data['seq']):
@@ -115,3 +113,4 @@ def bar_chart(window, x0, y0, x1, T, data, gh):
             )
         pygame.draw.rect(window, item[1], rect)
         display_text(window, data['font'], item[0], x0 + 10, (t + (diff/2)), (255,255,255))
+

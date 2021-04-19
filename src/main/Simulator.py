@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+import queue
 
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
@@ -82,6 +83,17 @@ class Simulator:
         self.diff_infection_timeseries = list()
         self.BETA = list()
         self.Ro = 0.0
+
+        self.bar_chart_height = (cfg.GAME_HEIGHT * .3)
+
+        self.central_wall_width = 50
+        used_height = cfg.GAME_HEIGHT - (cfg.QUARANTINE_CENTRE_HEIGHT + self.bar_chart_height)
+        self.central_location_wall_vector = build_walls(
+                self.central_wall_width, self.main_x, cfg.GAME_WIDTH,
+                cfg.GAME_HEIGHT - used_height,
+                cfg.GAME_HEIGHT)
+
+        self.in_central_location = set()
 
     @property
     def suslen(self):
@@ -195,7 +207,7 @@ class Simulator:
         """
             if Ro is low its easy to quarantine people, easy to detect
         """
-        if not cfg.QUARANTINE or not p.is_infected or p.quarantined:
+        if not cfg.QUARANTINE or not p.is_infected or p.quarantined or p.is_travelling:
             return
 
         if not p.will_show_symptoms:
@@ -269,6 +281,36 @@ class Simulator:
             else:
                 self.diff_infection_timeseries.append(self.inflen)
 
+    def travel_to_central_location(self):
+        if not cfg.CENTRAL_LOCATION:
+            return
+
+        now_there = self.in_central_location
+        if (self.day % 10 == 0):
+            for p in self.in_central_location:
+                p.fly_to_in_peace(p.prev_xy_b[0], p.prev_xy_b[1], p.prev_xy_b[2])
+            self.in_central_location = set()
+
+        if (self.day % 2 != 0):
+            return
+
+        how_many = 5
+        for _ in range(how_many):
+            c = np.random.randint(0, self.alllen)
+
+            p = self.all_container[c]
+
+            if p in now_there or p.quarantined:
+                continue
+
+            xd = (self.central_location_wall_vector['x1'] - self.central_location_wall_vector['x0']) / 2
+            x = self.central_location_wall_vector['x0'] + (xd/2) + self.central_wall_width
+            yd = (self.central_location_wall_vector['y1'] - self.central_location_wall_vector['y0']) / 2
+            y = self.central_location_wall_vector['y0'] + (yd/2) + self.central_wall_width
+            p.fly_to_in_peace(x, y, self.central_location_wall_vector)
+
+            self.in_central_location.add(p)
+
     def pick_lucky_winners_for_travel(self):
         if not cfg.TRAVEL:
             return
@@ -277,7 +319,7 @@ class Simulator:
         if should_travel_happen <= cfg.TRAVEL_FREQUENCY:
 
             p1, p2 = self.all_container[0], self.all_container[0]
-            q = p1.quarantined + p2.quarantined
+            q = p1.quarantined + p2.quarantined + p1.is_travelling + p2.is_travelling
 
             try_till = 3
             i = 0
@@ -301,19 +343,23 @@ class Simulator:
         self.window.fill(cfg.BACKGROUND)
 
         for wv in self.wall_vector_list:
-            draw_walls(self.window, wv,
-                    self.wall_width, wv['x0'], wv['y0'], wv['x1'], wv['y1'])
+            draw_walls(self.window, wv, self.wall_width)
 
         self.window.fill(cfg.BACKGROUND, (self.main_x, 0, cfg.GAME_WIDTH, cfg.GAME_HEIGHT))
 
-        # Quarantine Walls
-        draw_walls(self.window, self.q_centre_wall_vector,
-                self.wall_width, self.main_x, 0, self.X, cfg.QUARANTINE_CENTRE_HEIGHT)
+        # Quarantine walls
+        draw_walls(self.window, self.q_centre_wall_vector, self.wall_width)
+
+        # Central location walls
+        draw_walls(self.window, self.central_location_wall_vector, self.central_wall_width)
+
+        self.travel_to_central_location()
 
         day = self.update_time()
         fps = self.update_fps()
 
         self.all_container.sort(key=lambda p: p.x)
+
 
         newly_infected = list()
         newly_recovered = list()
@@ -358,7 +404,7 @@ class Simulator:
         bar_chart(
                 self.window, self.main_x,
                 cfg.QUARANTINE_CENTRE_HEIGHT, self.X,
-                self.T, bar_data, cfg.GAME_HEIGHT)
+                self.T, bar_data, self.bar_chart_height)
 
         Ro_avg = np.round(np.average(self.BETA), 2)
 

@@ -32,6 +32,7 @@ class Particle:
         self.quarantined = False
         self.will_show_symptoms = True
         self.destination = None
+        self.prev_xy_b = None
 
     @property
     def is_travelling(self):
@@ -52,7 +53,7 @@ class Particle:
 
     def travel_flight_mode(self):
         d, _, _ = euclidean_distance(self.x, self.y, self.destination[0], self.destination[1])
-        if d > 10:
+        if d > 5:
             self.angle = np.arctan2(self.destination[1] - self.y, self.destination[0] - self.x)
             self.x += np.cos(self.angle) * self.vel
             self.y += np.sin(self.angle) * self.vel
@@ -60,6 +61,10 @@ class Particle:
         else:
             self.destination = None
             self.vel /= 4
+
+    def control_velocity(self):
+        if self.vel > cfg.PARTICLE_VELOCITY and not self.is_travelling:
+            self.vel = cfg.PARTICLE_VELOCITY
 
     def update_2d_vectors(self):
         if self.is_travelling:
@@ -72,6 +77,7 @@ class Particle:
 
         self.update_coordinates()
         self.update_circumference_coordinates()
+        self.control_velocity()
 
     @property
     def is_infected(self):
@@ -141,6 +147,7 @@ class Particle:
 
     def fly_to_in_peace(self, x, y, new_walls):
         self.destination = (x, y)
+        self.prev_xy_b = (self.x, self.y, self.my_boundries)
         self.my_boundries = new_walls
         self.vel *= 4
 

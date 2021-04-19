@@ -16,8 +16,8 @@ class Config:
         # VIRUS PARAMETERS
         self.QUARANTINE = True
         self.QUARANTINE_AT_DAY = 5
-        self.POPULATION = 200 # # of particles
-        self.I0 = 1 # initial infected
+        self.POPULATION = 450 # # of particles
+        self.I0 = 3 # initial infected
         self.R0 = 0 # initial removed
         self.BETA = 2.4 # R-value
         self.RECOVERED_PERIOD_IN_DAYS = 14
@@ -26,16 +26,19 @@ class Config:
         self.COMMUNITY_ROWS = 1
         self.COMMUNITY_COLS = 1
         self.COMMUNITY_ROWS = 2
-        self.COMMUNITY_COLS = 3
+        self.COMMUNITY_COLS = 2
 
         self.TRAVEL = True
-        self.TRAVEL_FREQUENCY = .01
+        self.TRAVEL_FREQUENCY = .05
+        self.CENTRAL_LOCATION = False
+        if self.CENTRAL_LOCATION and self.TRAVEL:
+            self.TRAVEL_FREQUENCY = .01
 
-        self.SYMPTOMATIC_ASYMPTOMATIC = False
+        self.SYMPTOMATIC_ASYMPTOMATIC = True
         self.SYM_ASYM_PROBAB = 0.5
 
-        self.MASKS = False
-        self.RATIO_OF_POP_WITH_MASKS = .3
+        self.MASKS = True
+        self.RATIO_OF_POP_WITH_MASKS = .8
 
         self.MASK_MASK = .05
         self.MASK_NOMASK = 0.125 # (10+15) / 2 .. disease patient without mask
@@ -79,13 +82,12 @@ class Config:
 
         self.BACKGROUND = (10, 10, 10)
 
-
         self.TESTING_MODE  = False
         if self.TESTING_MODE:
             self.GAME_WIDTH = 300
             self.GAME_HEIGHT = 300
 
-            self.POPULATION = 30
+            self.POPULATION = 1
             self.I0 = 1
             self.PARTICLE_VELOCITY = 1
             # self.RECOVERED_PERIOD_IN_DAYS = 3
