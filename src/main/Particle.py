@@ -114,7 +114,7 @@ class Particle:
                 if will_show_symptoms <= cfg.SYM_ASYM_PROBAB:
                     self.will_show_symptoms = False
                     self.radius = 7.5
-                    self.vel += 1.5
+                    self.vel += .75
             return True
 
     def infect(self, infectee, time):

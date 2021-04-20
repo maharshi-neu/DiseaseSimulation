@@ -412,6 +412,19 @@ class Simulator:
             self.in_central_location.add(p)
 
     def pick_lucky_winners_for_travel(self):
+        """
+            A particle pair travels inter community per tick if there is more than one community
+            Max 2 tries are made to find unique particles suitable for travel
+            Max 1 pair travels
+            Min 0 pair travels
+
+            Particles are chosen at random form all container
+
+            Filtering criteria:
+                - Particles should not be in the same community
+                - No particle should be quarantined
+                - No particle should be in traveling phase
+        """
         if not cfg.TRAVEL:
             return
 
@@ -420,7 +433,7 @@ class Simulator:
 
             p1, p2 = self.all_container[0], self.all_container[0]
 
-            try_till = 3
+            try_till = 2
             i = 0
 
             while p1.my_boundries == p2.my_boundries and i < try_till:
@@ -438,8 +451,21 @@ class Simulator:
                 tmp = p1.my_boundries
                 p1.fly_to_in_peace(p2.x, p2.y, p2.my_boundries)
                 p2.fly_to_in_peace(p1.x, p1.y, tmp)
+                break
 
     def contact_trace(self):
+        """
+            Contact tracking done every day
+            Contact tracing is constrained with resources, we assume that there exits only \
+                    one team of contact tracers for the given population.
+            When a infected particle is quarantined it is put into a queue for contact tracing
+
+            Queue.pop() gives the particle to trace
+            Every particles maintains a stack of particles whom it came in contact with
+            Stack.pop() is done on the trace particle
+                if the poped particle is infected then quarantine
+                when Stack empty (trace complete) remove particle from queue
+        """
         if not cfg.CONTACT_TRACING or self.day % 1:
             return
         if self.to_contact_trace:
@@ -451,7 +477,17 @@ class Simulator:
                 self.to_contact_trace.popleft()
 
     def vaccinate(self, p):
-        if cfg.VACCINE and self.day % .5 and p.vaccinated < (2 * cfg.SHIELD_PROVIDED_BY_VACCINE) and not p.is_infected:
+        """
+            Vaccine sessions are held twice per day
+            if vaccine are available then it is provided to particle
+            vaccine provides shield to partilce shield brings down the probability \
+                    drastically (config.SHIELD_PROVIDED_BY_VACCINE)
+            2 doses can be given to a particle, 2nd dose gives complete immunity(depending on the shield value)
+
+            VACCINE_DISPERSION_RATE / suslen  = When susceptible length is high than vaccine distribution is slow \
+                    when susceptible length drops distribution is higher than before
+        """
+        if cfg.VACCINE and self.day % .2 and p.vaccinated < (2 * cfg.SHIELD_PROVIDED_BY_VACCINE) and not p.is_infected:
             probability_of_getting_vaccine = (cfg.VACCINE_DISPERSION_RATE / self.suslen)
             will_p_get_vaccine = uniform_probability()
             if p.vaccinated:
@@ -463,6 +499,10 @@ class Simulator:
                 self.vaccine_availability -= 1
 
     def update_and_render(self):
+        """
+            This function is where everything happnes in terms of updates/renders
+            Called in the main game loop
+        """
         self.update_tick()
         self.window.fill(cfg.BACKGROUND)
 
@@ -551,6 +591,9 @@ class Simulator:
         pygame.display.update()
 
     def run(self):
+        """
+            The main game loop
+        """
         while self.running and cfg.RUN_TIME_IN_DAYS > self.day:
             self.process_input()
             self.update_and_render()
