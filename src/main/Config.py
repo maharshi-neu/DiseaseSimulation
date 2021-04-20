@@ -16,29 +16,29 @@ class Config:
         # VIRUS PARAMETERS
         self.QUARANTINE = True
         self.QUARANTINE_AT_DAY = 5
-        self.POPULATION = 450 # # of particles
+        self.POPULATION = 300 # # of particles
         self.I0 = 3 # initial infected
         self.R0 = 0 # initial removed
-        self.BETA = 2.4 # R-value
+        # self.BETA = 2.4 # R-value
         self.RECOVERED_PERIOD_IN_DAYS = 14
         self.TRANSMISSION_PROBABILITY = 0.90
 
         self.COMMUNITY_ROWS = 1
         self.COMMUNITY_COLS = 1
-        self.COMMUNITY_ROWS = 2
-        self.COMMUNITY_COLS = 2
+        # self.COMMUNITY_ROWS = 2
+        # self.COMMUNITY_COLS = 2
 
-        self.TRAVEL = True
+        self.TRAVEL = False
         self.TRAVEL_FREQUENCY = .05
-        self.CENTRAL_LOCATION = False
+        self.CENTRAL_LOCATION = True
         if self.CENTRAL_LOCATION and self.TRAVEL:
             self.TRAVEL_FREQUENCY = .01
 
         self.SYMPTOMATIC_ASYMPTOMATIC = True
-        self.SYM_ASYM_PROBAB = 0.5
+        self.SYM_ASYM_PROBAB = 0.101
 
         self.MASKS = True
-        self.RATIO_OF_POP_WITH_MASKS = .8
+        self.RATIO_OF_POP_WITH_MASKS = .6
 
         self.MASK_MASK = .05
         self.MASK_NOMASK = 0.125 # (10+15) / 2 .. disease patient without mask
@@ -49,6 +49,9 @@ class Config:
         self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
 
         self.CONTACT_TRACING = True
+        self.VACCINE = True
+        self.VACCINE_DISPERSION_RATE = self.POPULATION / (self.RUN_TIME_IN_DAYS / 2)
+        self.SHIELD_PROVIDED_BY_VACCINE = .5
 
         # Colors
         self.RED = (255, 0, 0)
@@ -71,14 +74,13 @@ class Config:
 
         self.SUSCEPTIBLE_TYPE = 3
         self.INFECTED_TYPE = 2
-        self.RECOVERED_TYPE = 1
-        self.REMOVED_TYPE = 0
+        self.REMOVED_TYPE = 1
 
         self.SUSCEPTIBLE_COLOR = self.LIGHTGREEN
         self.MASKED_SUS_COLOR = self.MASKGREEN
         self.INFECTED_COLOR = self.RED
         self.MASKED_INF_COLOR = self.ORANGERED
-        self.RECOVERED_COLOR = self.GREY
+        self.REMOVED_COLOR = self.GREY
 
         self.BACKGROUND = (10, 10, 10)
 
@@ -87,8 +89,8 @@ class Config:
             self.GAME_WIDTH = 300
             self.GAME_HEIGHT = 300
 
-            self.POPULATION = 1
-            self.I0 = 1
+            self.POPULATION = 45
+            self.I0 = 3
             self.PARTICLE_VELOCITY = 1
             # self.RECOVERED_PERIOD_IN_DAYS = 3
 
@@ -96,9 +98,3 @@ class Config:
             self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .4)
             self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH
 
-
-def knuth_shuffle(n):
-    for i in range(len(n)):
-        j = random.randrange(i, len(n))
-        n[i], [j] = n[j], n[i]
-    return n
