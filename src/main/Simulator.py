@@ -101,6 +101,8 @@ class Simulator:
         self.Rmax = -99
         self.to_contact_trace = deque()
 
+        self.vaccine_availability = 0
+
     @property
     def suslen(self):
         return len(self.susceptible_container)
@@ -116,6 +118,10 @@ class Simulator:
     @property
     def alllen(self):
         return len(self.all_container)
+
+    def disperse_vaccine(self):
+        if cfg.VACCINE and self.day % 1 == 0:
+            self.vaccine_availability += cfg.VACCINE_DISPERSION_RATE
 
     def init_groups(self):
         min_ct = self.clock_tick / 2
@@ -162,8 +168,8 @@ class Simulator:
             wv = self.wall_vector_list[w]
             p = Particle(
                     random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
-                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.RECOVERED_TYPE,
-                    color=cfg.RECOVERED_COLOR, clock_tick=fps)
+                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.REMOVED_TYPE,
+                    color=cfg.REMOVED_COLOR, clock_tick=fps)
             p.my_boundries = wv
             self.recovered_container.append(p)
             self.all_container.append(p)
@@ -182,7 +188,7 @@ class Simulator:
             jp = self.all_container[j]
 
             travelling = jp.is_travelling + ip.is_travelling
-            if (jp.status != cfg.RECOVERED_TYPE != ip.status) and not travelling:
+            if (jp.status != cfg.REMOVED_TYPE != ip.status) and not travelling:
                 condition = (jp.is_infected) + (ip.is_infected)
                 if condition == 1:
                     d, dx, dy = euclidean_distance(ip.x, ip.y, jp.x, jp.y)
@@ -243,7 +249,7 @@ class Simulator:
     def trace_line(self, p):
         if cfg.CONTACT_TRACING and p.is_infected:
             for i in p.came_in_contact_with:
-                draw_line(self.window, cfg.INFECTED_COLOR, p.x, p.y, i.x, i.y)
+                draw_line(self.window, cfg.GREY, p.x, p.y, i.x, i.y)
 
     def update_stats(self):
         stats_height = self.stats.get_height()
@@ -361,6 +367,18 @@ class Simulator:
             else:
                 self.to_contact_trace.popleft()
 
+    def vaccinate(self, p):
+        if cfg.VACCINE and self.day % .5 and p.vaccinated < (2 * cfg.SHIELD_PROVIDED_BY_VACCINE) and not p.is_infected:
+            probability_of_getting_vaccine = (cfg.VACCINE_DISPERSION_RATE / self.suslen)
+            will_p_get_vaccine = uniform_probability()
+            if p.vaccinated:
+                will_p_get_vaccine += .3
+            if will_p_get_vaccine <= probability_of_getting_vaccine and self.vaccine_availability >= 1:
+                p.vaccinated += cfg.SHIELD_PROVIDED_BY_VACCINE
+                p.color = (255,255,255)
+                p.radius -= 1
+                self.vaccine_availability -= 1
+
     def update_and_render(self):
         self.update_tick()
         self.window.fill(cfg.BACKGROUND)
@@ -380,6 +398,8 @@ class Simulator:
 
         day = self.update_time()
         fps = self.update_fps()
+
+        self.disperse_vaccine()
 
         self.all_container.sort(key=lambda p: p.x)
 
@@ -406,6 +426,7 @@ class Simulator:
                 newly_recovered.append(p)
             self.trace_line(p)
             self.move_to_quarantine(p)
+            self.vaccinate(p)
 
         self.contact_trace()
         self.update_stats()
@@ -422,7 +443,7 @@ class Simulator:
         bar_data = {
                 'S': (self.suslen, cfg.SUSCEPTIBLE_COLOR),
                 'I': (self.inflen, cfg.INFECTED_COLOR),
-                'R': (self.reclen, cfg.RECOVERED_COLOR),
+                'R': (self.reclen, cfg.REMOVED_COLOR),
                 'seq': ['S', 'I', 'R'],
                 'font': self.font,
 

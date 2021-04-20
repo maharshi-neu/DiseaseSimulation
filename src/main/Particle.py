@@ -36,6 +36,7 @@ class Particle:
         self.prev_xy_b = None
 
         self.came_in_contact_with = deque()
+        self.vaccinated = 0
 
     @property
     def is_travelling(self):
@@ -90,7 +91,7 @@ class Particle:
 
     @property
     def is_recovered(self):
-        return True if self.status == cfg.RECOVERED_TYPE else False
+        return True if self.status == cfg.REMOVED_TYPE else False
 
     @property
     def is_susceptible(self):
@@ -100,12 +101,13 @@ class Particle:
         if self.is_infected:
             self.infected_particles.append(infected)
 
-    def _infect(self, infectee, time, probab):
-        p = uniform_probability()
+    def _infect(self, infectee, time, probab, color):
+        p = uniform_probability() + self.vaccinated
         if p <= probab:
             infectee.update_infected_count(self)
 
             self.status = cfg.INFECTED_TYPE
+            self.color = color
             self.infected_since = time
             if cfg.SYMPTOMATIC_ASYMPTOMATIC:
                 will_show_symptoms = uniform_probability()
@@ -131,14 +133,12 @@ class Particle:
             else:
                 t_p = cfg.TRANSMISSION_PROBABILITY
 
-        if self._infect(infectee, time, t_p):
-            self.color = clr
-            return True
+        return self._infect(infectee, time, t_p, clr)
 
     def recover(self, day):
         if self.is_infected and (day - self.infected_since) >= cfg.RECOVERED_PERIOD_IN_DAYS:
-            self.status = cfg.RECOVERED_TYPE
-            self.color = cfg.RECOVERED_COLOR
+            self.status = cfg.REMOVED_TYPE
+            self.color = cfg.REMOVED_COLOR
             self.vel = 0
             return True
 
