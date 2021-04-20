@@ -1,7 +1,7 @@
 import numpy as np
 import pygame
 
-# np.random.seed(470)
+# np.random.seed(0)
 
 def random_angle():
     return np.random.uniform(0, np.pi * 2)
@@ -57,7 +57,7 @@ def random_coord(a0, a1, radius):
     return np.random.randint(a0 + d, a1 - d)
 
 def draw_walls(window, wv, wall_width):
-    wall_color = (50, 0, 150) # RGB
+    wall_color = (28, 21, 0) # RGB
     # left wall
     leftRect = pygame.Rect(wv['x0'], wv['y0'], wall_width, wv['y1']) # left, top, width, height
     pygame.draw.rect(window, wall_color, leftRect)

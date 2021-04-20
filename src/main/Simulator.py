@@ -1,6 +1,6 @@
 import pygame
 import numpy as np
-import queue
+from collections import deque
 
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
@@ -86,14 +86,20 @@ class Simulator:
 
         self.bar_chart_height = (cfg.GAME_HEIGHT * .3)
 
-        self.central_wall_width = 50
         used_height = cfg.GAME_HEIGHT - (cfg.QUARANTINE_CENTRE_HEIGHT + self.bar_chart_height)
+        h = cfg.GAME_HEIGHT - used_height
+        self.central_wall_width = h * .1
         self.central_location_wall_vector = build_walls(
                 self.central_wall_width, self.main_x, cfg.GAME_WIDTH,
-                cfg.GAME_HEIGHT - used_height,
+                h,
                 cfg.GAME_HEIGHT)
 
         self.in_central_location = set()
+
+        self.asymptomatic_container = set()
+
+        self.Rmax = -99
+        self.to_contact_trace = deque()
 
     @property
     def suslen(self):
@@ -185,9 +191,15 @@ class Simulator:
                         if jp.is_infected:
                             if(ip.infect(jp, self.day)):
                                 newly_infected.append(ip)
+                                if not ip.will_show_symptoms and ip not in self.asymptomatic_container:
+                                    self.asymptomatic_container.add(ip)
+                            jp.came_in_contact_with.append(ip)
                         else:
                             if(jp.infect(ip, self.day)):
                                 newly_infected.append(jp)
+                                if not jp.will_show_symptoms and jp not in self.asymptomatic_container:
+                                    self.asymptomatic_container.add(jp)
+                            ip.came_in_contact_with.append(jp)
                     else:
                         break
                 else:
@@ -203,23 +215,20 @@ class Simulator:
         self.day = np.round(self.tick / cfg.DAY_IN_CLOCK_TICK, 2)
         return 'Day {}'.format(self.day)
 
-    def move_to_quarantine(self, p):
+    def move_to_quarantine(self, p, override=False):
         """
             if Ro is low its easy to quarantine people, easy to detect
         """
-        if not cfg.QUARANTINE or not p.is_infected or p.quarantined or p.is_travelling:
-            return
+        if cfg.QUARANTINE and p.is_infected and not p.quarantined and not p.is_travelling:
 
-        if not p.will_show_symptoms:
-            return
-
-        if (self.day - p.infected_since) > cfg.QUARANTINE_AT_DAY:
-            p.fly_to_in_peace(
-                    (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x,
-                    (cfg.QUARANTINE_CENTRE_HEIGHT / 2),
-                    self.q_centre_wall_vector
-            )
-            p.quarantined = True
+            if ((self.day - p.infected_since) > cfg.QUARANTINE_AT_DAY and p.will_show_symptoms) or override:
+                p.fly_to_in_peace(
+                        (cfg.QUARANTINE_CENTRE_WIDTH / 2) + self.main_x,
+                        (cfg.QUARANTINE_CENTRE_HEIGHT / 2),
+                        self.q_centre_wall_vector
+                )
+                p.quarantined = True
+                self.to_contact_trace.append(p)
 
     def update_containers(self, newly_infected, newly_recovered):
         if newly_infected:
@@ -232,8 +241,8 @@ class Simulator:
             self.recovered_container.extend(newly_recovered)
 
     def trace_line(self, p):
-        if p.is_infected:
-            for i in p.infected_particles:
+        if cfg.CONTACT_TRACING and p.is_infected:
+            for i in p.came_in_contact_with:
                 draw_line(self.window, cfg.INFECTED_COLOR, p.x, p.y, i.x, i.y)
 
     def update_stats(self):
@@ -282,12 +291,14 @@ class Simulator:
                 self.diff_infection_timeseries.append(self.inflen)
 
     def travel_to_central_location(self):
-        if not cfg.CENTRAL_LOCATION:
+        if not cfg.CENTRAL_LOCATION and self.day % .5 == 0:
             return
 
         now_there = self.in_central_location
         if (self.day % 10 == 0):
             for p in self.in_central_location:
+                if p.quarantined:
+                    continue
                 p.fly_to_in_peace(p.prev_xy_b[0], p.prev_xy_b[1], p.prev_xy_b[2])
             self.in_central_location = set()
 
@@ -319,24 +330,36 @@ class Simulator:
         if should_travel_happen <= cfg.TRAVEL_FREQUENCY:
 
             p1, p2 = self.all_container[0], self.all_container[0]
-            q = p1.quarantined + p2.quarantined + p1.is_travelling + p2.is_travelling
 
             try_till = 3
             i = 0
 
-            while p1.my_boundries == p2.my_boundries and q == 0:
+            while p1.my_boundries == p2.my_boundries and i < try_till:
                 c1 = np.random.randint(0, self.alllen)
                 c2 = np.random.randint(0, self.alllen)
                 p1 = self.all_container[c1]
                 p2 = self.all_container[c2]
-                q = p1.quarantined + p2.quarantined
-                i += 1
-                if i == try_till:
-                    return
 
-            tmp = p1.my_boundries
-            p1.fly_to_in_peace(p2.x, p2.y, p2.my_boundries)
-            p2.fly_to_in_peace(p1.x, p1.y, tmp)
+                i += 1
+
+                q = p1.quarantined + p2.quarantined + p1.is_travelling + p2.is_travelling
+                if q != 0:
+                    continue
+
+                tmp = p1.my_boundries
+                p1.fly_to_in_peace(p2.x, p2.y, p2.my_boundries)
+                p2.fly_to_in_peace(p1.x, p1.y, tmp)
+
+    def contact_trace(self):
+        if not cfg.CONTACT_TRACING or self.day % 1:
+            return
+        if self.to_contact_trace:
+            trace = self.to_contact_trace[0]
+            if trace.came_in_contact_with:
+                to_q = trace.came_in_contact_with.pop()
+                self.move_to_quarantine(to_q, True)
+            else:
+                self.to_contact_trace.popleft()
 
     def update_and_render(self):
         self.update_tick()
@@ -360,7 +383,6 @@ class Simulator:
 
         self.all_container.sort(key=lambda p: p.x)
 
-
         newly_infected = list()
         newly_recovered = list()
         self.contact = 0
@@ -382,9 +404,10 @@ class Simulator:
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
             if(p.is_infected and p.recover(self.day)):
                 newly_recovered.append(p)
-            # self.trace_line(p)
+            self.trace_line(p)
             self.move_to_quarantine(p)
 
+        self.contact_trace()
         self.update_stats()
         self.render_stats()
         self.update_containers(newly_infected, newly_recovered)
@@ -392,6 +415,9 @@ class Simulator:
         self.update_infection_timeseries()
         self.Ro = calculate_r_naught(self.diff_infection_timeseries, self.Ro)
         self.BETA.append(self.Ro)
+
+        if self.Ro > self.Rmax:
+            self.Rmax = self.Ro
 
         bar_data = {
                 'S': (self.suslen, cfg.SUSCEPTIBLE_COLOR),
@@ -412,6 +438,9 @@ class Simulator:
         display_text(self.window, self.font, day, self.main_x / 2 - 10, 10)
         display_text(self.window, self.font, 'Ro {}'.format(self.Ro), 10, 25)
         display_text(self.window, self.font, 'Ro Avg {}'.format(Ro_avg), 10, 35)
+        display_text(self.window, self.font, 'Ro max {}'.format(self.Rmax), 10, 45)
+        k = np.round(len(self.asymptomatic_container) / self.T, 2)
+        display_text(self.window, self.font, 'k {}'.format(k), 10, 55)
 
         self.pick_lucky_winners_for_travel()
 

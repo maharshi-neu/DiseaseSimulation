@@ -1,5 +1,6 @@
 import pygame
 import numpy as np
+from collections import deque
 
 from . import random_angle, uniform_probability, euclidean_distance
 from . import cfg
@@ -34,6 +35,8 @@ class Particle:
         self.destination = None
         self.prev_xy_b = None
 
+        self.came_in_contact_with = deque()
+
     @property
     def is_travelling(self):
         return True if self.destination else False
@@ -59,11 +62,13 @@ class Particle:
             self.y += np.sin(self.angle) * self.vel
             self.update_circumference_coordinates()
         else:
+            self.x = self.destination[0]
+            self.y = self.destination[1]
             self.destination = None
             self.vel /= 4
 
     def control_velocity(self):
-        if self.vel > cfg.PARTICLE_VELOCITY and not self.is_travelling:
+        if self.vel > (cfg.PARTICLE_VELOCITY + 2) and not self.is_travelling and self.will_show_symptoms:
             self.vel = cfg.PARTICLE_VELOCITY
 
     def update_2d_vectors(self):
@@ -106,7 +111,8 @@ class Particle:
                 will_show_symptoms = uniform_probability()
                 if will_show_symptoms <= cfg.SYM_ASYM_PROBAB:
                     self.will_show_symptoms = False
-                    self.color = (252, 3, 202)
+                    self.radius = 7.5
+                    self.vel += 1.5
             return True
 
     def infect(self, infectee, time):
@@ -133,7 +139,6 @@ class Particle:
         if self.is_infected and (day - self.infected_since) >= cfg.RECOVERED_PERIOD_IN_DAYS:
             self.status = cfg.RECOVERED_TYPE
             self.color = cfg.RECOVERED_COLOR
-            self.quarantined = False
             self.vel = 0
             return True
 
