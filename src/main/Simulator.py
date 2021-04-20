@@ -63,7 +63,7 @@ class Simulator:
 
         self.susceptible_container = list()
         self.infected_container = list()
-        self.recovered_container = list()
+        self.removed_container = list()
         self.all_container = list()
 
         self.n_susceptible = cfg.POPULATION - cfg.I0 - cfg.R0
@@ -105,25 +105,43 @@ class Simulator:
 
     @property
     def suslen(self):
+        """
+            Returns length of susceptible container
+        """
         return len(self.susceptible_container)
 
     @property
     def inflen(self):
+        """
+            Returns length of infected container
+        """
         return len(self.infected_container)
 
     @property
     def reclen(self):
-        return len(self.recovered_container)
+        """
+            Returns length of infected container
+        """
+        return len(self.removed_container)
 
     @property
     def alllen(self):
+        """
+            Returns length of all container
+        """
         return len(self.all_container)
 
     def disperse_vaccine(self):
+        """
+            Disperses vaccine per day
+        """
         if cfg.VACCINE and self.day % 1 == 0:
             self.vaccine_availability += cfg.VACCINE_DISPERSION_RATE
 
     def init_groups(self):
+        """
+            Called in __init__ populates all the containers with Particles
+        """
         min_ct = self.clock_tick / 2
         max_ct = self.clock_tick * 2
 
@@ -171,7 +189,7 @@ class Simulator:
                     random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.REMOVED_TYPE,
                     color=cfg.REMOVED_COLOR, clock_tick=fps)
             p.my_boundries = wv
-            self.recovered_container.append(p)
+            self.removed_container.append(p)
             self.all_container.append(p)
 
             w += 1
@@ -179,7 +197,9 @@ class Simulator:
                 w = 0
 
     def handle_particle_collision(self, i):
-        # sweep n prune
+        """
+            Sweep and prune
+        """
         diameter = cfg.PARTICLE_RADIUS * 2
         newly_infected = list()
 
@@ -214,16 +234,29 @@ class Simulator:
         return newly_infected
 
     def update_fps(self):
+        """
+            Updates & returns FPS per tick
+        """
         fps = str(int(self.clock.get_fps()))
         return fps
 
     def update_time(self):
+        """
+            Updates & returns(day) time per tick
+        """
         self.day = np.round(self.tick / cfg.DAY_IN_CLOCK_TICK, 2)
         return 'Day {}'.format(self.day)
 
     def move_to_quarantine(self, p, override=False):
         """
-            if Ro is low its easy to quarantine people, easy to detect
+            Input:
+                p = Particle
+                override = flag
+
+            Moves intected particle to quarantine @ recovery rate mentioned in config file.
+            In case of contact tracing override flag is passed and even asymptomatic particles \
+                    are quarantined
+
         """
         if cfg.QUARANTINE and p.is_infected and not p.quarantined and not p.is_travelling:
 
@@ -237,6 +270,14 @@ class Simulator:
                 self.to_contact_trace.append(p)
 
     def update_containers(self, newly_infected, newly_recovered):
+        """
+            Input:
+                newly_infected = list of newly infected particles
+                newly_recovered = list of newly recovered particles
+
+            Updates the infected container with list of newly infected particles
+            Updates the removed container with list of newly recovered particles
+        """
         if newly_infected:
             self.susceptible_container = [
                     sus for sus in self.susceptible_container if sus.is_susceptible]
@@ -244,14 +285,27 @@ class Simulator:
         if newly_recovered:
             self.infected_container = [
                     inf for inf in self.infected_container if inf.is_infected]
-            self.recovered_container.extend(newly_recovered)
+            self.removed_container.extend(newly_recovered)
 
     def trace_line(self, p):
+        """
+            Input:
+                p = Particle
+
+            Draws a straight line per tick between the input particle and the particles that \
+                    it has come in contact with
+        """
         if cfg.CONTACT_TRACING and p.is_infected:
             for i in p.came_in_contact_with:
                 draw_line(self.window, cfg.GREY, p.x, p.y, i.x, i.y)
 
     def update_stats(self):
+        """
+            Updates line chart per tick with shaded area with color code of \
+                    Susceptible, Infected, Removed.
+            Scale is determined with the the number of ticks the simulation will run \
+                    (config = RUN_TIME_IN_TICK)
+        """
         stats_height = self.stats.get_height()
         stats_width = self.stats.get_width()
 
@@ -273,6 +327,12 @@ class Simulator:
         stats_graph[t, y_infect:] = pygame.Color(*cfg.INFECTED_COLOR)
 
     def init_render_stats(self):
+        """
+            Renders the stats box where chart is drawn in __init__.
+            This is called once
+
+            retruns None
+        """
         stats_x, stats_y = cfg.GAME_WIDTH // 4, cfg.GAME_HEIGHT // 4
         self.stats = pygame.Surface((stats_x, stats_y))
         self.stats.fill(cfg.GREY)
@@ -280,10 +340,16 @@ class Simulator:
         self.stats_pos = (10, cfg.GAME_HEIGHT - (stats_y + 10))
 
     def render_stats(self):
+        """
+            Renders the chart SIR chart every tick
+        """
         self.stats.unlock()
         self.window.blit(self.stats, self.stats_pos)
 
     def update_tick(self):
+        """
+            Updates tick counter per tick
+        """
         self.tick += 1
 
     def update_infection_timeseries(self):
@@ -297,6 +363,23 @@ class Simulator:
                 self.diff_infection_timeseries.append(self.inflen)
 
     def travel_to_central_location(self):
+        """
+            Below runs every 2nd day
+                Chosen particle travels to the central localtion right bottom room \
+                        which has a smaller area than any other room in the simulation.
+                The small area increases the probability of a particle of contracting the virus \
+                        iff the a particle with the virus is in the room already.
+                Max: 5 particles are chosen at random from the all container
+                Min: 0 also can be chosen if the particles do not meet the following criteria.
+
+                Filter critiera:
+                    - Particle should not already be already in the room
+                    - Particle should not be quarantined
+
+            Below runs every 10th day
+                Particles in central location are transfered back to their original room \
+                        only criteria filtering this is if the particle is quarantined.
+        """
         if not cfg.CENTRAL_LOCATION and self.day % .5 == 0:
             return
 
