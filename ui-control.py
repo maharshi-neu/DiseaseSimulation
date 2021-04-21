@@ -3,10 +3,10 @@ from src import Simulator
 from src import Config
 
 cfg = Config()
-def simulatecode():
+def simulatecode(cfg):
     # Runs a Simulation Code
     sim = Simulator()
-    sim.run()
+    sim.run(cfg)
 
 
 
@@ -28,7 +28,8 @@ layout = [
     [
         sg.Frame('Preventive measures', [[
             sg.Checkbox(
-                'Mask', key='-mask-'), sg.Checkbox('Vaccine', key='-vaccine-')
+                'Mask', key='-mask-'), sg.Checkbox('Vaccine', key='-vaccine-'),
+            
                 #Slider for Mask effectiveness
                 #Ratio of Population with mask slider
         ]])
@@ -100,12 +101,7 @@ if values['-symptomatic-']:
 else :
     cfg.SYMPTOMATIC_ASYMPTOMATIC = False
 
-
-
-
 if event == 'Run':
-    cfg.COMMUNITY_ROWS=5
-    cfg.COMMUNITY_COLS=5
-    simulatecode()
+    simulatecode(cfg)
 
 window.Close()
