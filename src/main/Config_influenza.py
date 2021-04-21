@@ -23,13 +23,13 @@ class Config:
         self.I0 = 3 # initial infected
         self.R0 = 0 # initial removed
 
-        self.RECOVERED_PERIOD_IN_DAYS = 14
-        self.TRANSMISSION_PROBABILITY = 0.90
+        self.RECOVERED_PERIOD_IN_DAYS = 5
+        self.TRANSMISSION_PROBABILITY = 0.50
 
 
         # OPTION 1
         self.QUARANTINE = True
-        self.QUARANTINE_AT_DAY = 5
+        self.QUARANTINE_AT_DAY = 2
         self.QUARANTINE_CENTRE_WIDTH = round(self.GAME_WIDTH * .3)
         self.QUARANTINE_CENTRE_HEIGHT = round(self.GAME_HEIGHT * .4)
         self.GAME_WIDTH += self.QUARANTINE_CENTRE_WIDTH

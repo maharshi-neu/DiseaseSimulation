@@ -10,7 +10,6 @@ from . import (Particle, cfg, calculate_r_naught,
         uniform_probability, bar_chart)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
-import os
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 
@@ -311,7 +310,7 @@ class Simulator:
         """
         if cfg.CONTACT_TRACING and p.is_infected:
             for i in p.came_in_contact_with:
-                draw_line(self.window, cfg.GREY, p.x, p.y, i.x, i.y)
+                draw_line(self.window, cfg.LIGHTYELLOW, p.x, p.y, i.x, i.y)
 
     def update_stats(self):
         """
@@ -508,7 +507,7 @@ class Simulator:
                 will_p_get_vaccine += .3
             if will_p_get_vaccine <= probability_of_getting_vaccine and self.vaccine_availability >= 1:
                 p.vaccinated += cfg.SHIELD_PROVIDED_BY_VACCINE
-                p.color = (255,255,255)
+                p.color = cfg.LIGHTBLUE
                 p.radius -= 1
                 self.vaccine_availability -= 1
 
