@@ -2,6 +2,7 @@
 class Config:
     def __init__(self):
         # Game setup
+        self.LOGGING = True
         self.GAME_TITLE = "Disease Simulator"
         self.GAME_WIDTH = 800
         self.GAME_HEIGHT = 600

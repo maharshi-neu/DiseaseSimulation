@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 from collections import deque
+import logging
 
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
@@ -595,15 +596,33 @@ class Simulator:
         self.pick_lucky_winners_for_travel()
 
         pygame.display.update()
+        self.log()
+
+    def log(self):
+        """
+            format made easy for data tools
+            FORMAT: DAY S I R Ro
+        """
+        if cfg.LOGGING:
+            if self.day % 1 == 0:
+                logging.info(
+                        " {0} {1} {2} {3} {4}".format(self.day, self.suslen, self.inflen, self.reclen, self.Ro)
+                        )
 
     def run(self):
         """
             The main game loop
         """
+        if cfg.LOGGING:
+            logging.info("START")
+
         while self.running and cfg.RUN_TIME_IN_DAYS > self.day:
             self.process_input()
             self.update_and_render()
             self.clock.tick(self.clock_tick)
+
+        if cfg.LOGGING:
+            logging.info("END")
 
         pygame.quit()
 
