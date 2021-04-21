@@ -590,7 +590,7 @@ class Simulator:
 
         pygame.display.update()
 
-    def run(self):
+    def run(self,cfg):
         """
             The main game loop
         """
