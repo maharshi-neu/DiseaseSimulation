@@ -3,6 +3,9 @@ import numpy as np
 
 from main.Particle import Particle
 from main.util import *
+from main.Config import Config
+
+cfg = Config()
 
 
 class TestSim(unittest.TestCase):
@@ -87,6 +90,52 @@ class TestSim(unittest.TestCase):
         eo = (11, 7)
 
         self.assertEqual(o, eo)
+
+    def test_update_circumference_coordinates(self):
+        p1 = Particle(1, 2, 2, 0)
+
+        p1.x = 2
+        p1.y = 1
+        p1.update_circumference_coordinates()
+
+        self.assertEqual(p1.top, -4)
+        self.assertEqual(p1.right, 7)
+        self.assertEqual(p1.left, -3)
+        self.assertEqual(p1.bottom, 6)
+
+    def test_update_coordinates(self):
+        p1 = Particle(1, 2, 2, 0)
+
+        p1.x = 2
+        p1.y = 1
+        p1.update_coordinates()
+
+        self.assertAlmostEqual(p1.x, 2.586291991350209, delta=2)
+        self.assertAlmostEqual(p1.y, 1.8100998092078573, delta=2)
+
+    def test_control_velocity(self):
+        p1 = Particle(1, 2, 2, 0)
+
+        p1.vel = 10
+        p1.control_velocity()
+
+        self.assertEqual(p1.vel, cfg.PARTICLE_VELOCITY)
+
+    def test_update_2d_vectors(self):
+        p1 = Particle(1, 2, 2, 0)
+
+        p1.update_2d_vectors()
+
+        self.assertNotEqual(1, p1.x)
+        self.assertNotEqual(2, p1.y)
+
+    def test_recover(self):
+        p1 = Particle(1, 2, 2, 0)
+        p1.infected_since = 5
+
+        p1.recover(20)
+
+        self.assertEqual(p1.status, cfg.REMOVED_TYPE)
 
 
 if __name__ == '__main__':
