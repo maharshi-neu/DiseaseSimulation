@@ -7,12 +7,12 @@ from . import cfg
 
 
 class Particle:
-    def __init__(self, x, y, status, radius=cfg.PARTICLE_RADIUS, color=cfg.PARTICLE_COLOR, clock_tick=60):
+    def __init__(self, x, y, status, color, clock_tick=60):
         self.x = x
         self.y = y
         self.status = status
 
-        self.radius = radius
+        self.radius = cfg.PARTICLE_RADIUS
         self.color = color
 
         self.update_circumference_coordinates()
@@ -23,7 +23,7 @@ class Particle:
         self.vel = cfg.PARTICLE_VELOCITY # velocity
 
         self.f = 0 # frame
-        self.clock_tick = clock_tick
+        self.clock_tick = cfg.FPS
 
         self.infected_particles = list()
         self.my_boundries = dict()
@@ -40,15 +40,26 @@ class Particle:
 
     @property
     def is_travelling(self):
+        """
+            Returns the travelling status of the particle
+            i.e. is particle in transition state from one room to another
+        """
         return True if self.destination else False
 
     def update_circumference_coordinates(self):
+        """
+            Updates the particle circumference co-ordinates
+            i.e. top, right, bottom, left (central co-ordinate +- radius)
+        """
         self.top = abs(self.y) - self.radius
         self.right = abs(self.x) + self.radius
         self.bottom = abs(self.y) + self.radius
         self.left = abs(self.x) - self.radius
 
     def update_coordinates(self):
+        """
+            Updates the new particle central location (x,y)
+        """
         dx = np.sin(self.angle) * self.vel
         dy = np.cos(self.angle) * self.vel
 
@@ -56,6 +67,9 @@ class Particle:
         self.y -= dy
 
     def travel_flight_mode(self):
+        """
+            This function provides smooth transition between rooms
+        """
         d, _, _ = euclidean_distance(self.x, self.y, self.destination[0], self.destination[1])
         if d > 5:
             self.angle = np.arctan2(self.destination[1] - self.y, self.destination[0] - self.x)
@@ -69,10 +83,19 @@ class Particle:
             self.vel /= 4
 
     def control_velocity(self):
+        """
+            Sometimes particles miss the excat location by a few pixels when transition ends \
+                    from one room to another then this function helps lower the velocity which \
+                    was set for transition
+        """
         if self.vel > (cfg.PARTICLE_VELOCITY + 2) and not self.is_travelling and self.will_show_symptoms:
             self.vel = cfg.PARTICLE_VELOCITY
 
     def update_2d_vectors(self):
+        """
+            Calculates and updates the central location + circumference using helper function
+            Generates random angle for the particle to move next
+        """
         if self.is_travelling:
             self.travel_flight_mode()
             return
@@ -87,21 +110,40 @@ class Particle:
 
     @property
     def is_infected(self):
+        """
+            Returns infected status for the given particle
+        """
         return True if self.status == cfg.INFECTED_TYPE else False
 
     @property
-    def is_recovered(self):
+    def is_removed(self):
+        """
+            Returns removed status for the given particle
+        """
         return True if self.status == cfg.REMOVED_TYPE else False
 
     @property
     def is_susceptible(self):
+        """
+            Returns susceptible status for the given particle
+        """
         return True if self.status == cfg.SUSCEPTIBLE_TYPE else False
 
     def update_infected_count(self, infected):
+        """
+            Maintains a list of infected particles infected by a particle
+        """
         if self.is_infected:
             self.infected_particles.append(infected)
 
     def _infect(self, infectee, time, probab, color):
+        """
+            infects with a particle with probability \
+                    taking into consideration if the particle is wearing mask/vaccinated
+            If infected it also decides weather the particle will show symptoms or will be asymptomatic
+            Asymptomatic particles dont get quarantined, only case where this particle may get quarantined \
+                    is through contact tracing
+        """
         p = uniform_probability() + self.vaccinated
         if p <= probab:
             infectee.update_infected_count(self)
@@ -118,6 +160,10 @@ class Particle:
             return True
 
     def infect(self, infectee, time):
+        """
+            calls _infect with appropriate chance of getting quarantined and color
+            color is dependent upon if the particle is masked or not
+        """
         clr = cfg.INFECTED_COLOR
         if not cfg.MASKS:
             t_p = cfg.TRANSMISSION_PROBABILITY
@@ -136,6 +182,11 @@ class Particle:
         return self._infect(infectee, time, t_p, clr)
 
     def recover(self, day):
+        """
+            checks for recovery period from config(RECOVERED_PERIOD_IN_DAYS)
+            if the difference of now - infected since is greater then the recovery period
+            then marks particle as recovered/removed
+        """
         if self.is_infected and (day - self.infected_since) >= cfg.RECOVERED_PERIOD_IN_DAYS:
             self.status = cfg.REMOVED_TYPE
             self.color = cfg.REMOVED_COLOR
@@ -143,6 +194,10 @@ class Particle:
             return True
 
     def wear_mask(self):
+        """
+            decides weather the particle will wear a mask (deciding factor config.RATIO_OF_POP_WITH_MASKS),
+            updates the color and is_masked flag appropriately
+        """
         if cfg.MASKS:
             will_it_wear = uniform_probability()
             if will_it_wear <= cfg.RATIO_OF_POP_WITH_MASKS:
@@ -151,6 +206,9 @@ class Particle:
                 return
 
     def fly_to_in_peace(self, x, y, new_walls):
+        """
+            given particle will transition to a new room with updated boundies to collide with
+        """
         self.destination = (x, y)
         self.prev_xy_b = (self.x, self.y, self.my_boundries)
         self.my_boundries = new_walls

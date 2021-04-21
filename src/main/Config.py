@@ -37,18 +37,21 @@ class Config:
         # OPTION 2
         self.TRAVEL = True
         self.TRAVEL_FREQUENCY = .05
-        self.CENTRAL_LOCATION = False
+
+
+        # OPTION 3
+        self.CENTRAL_LOCATION = True
         if self.CENTRAL_LOCATION and self.TRAVEL:
             self.TRAVEL_FREQUENCY = .01
 
 
-        # OPTION 3
+        # OPTION 4
         self.SYMPTOMATIC_ASYMPTOMATIC = True
         self.SYM_ASYM_PROBAB = 0.101
 
 
-        # OPTION 4
-        self.MASKS = False
+        # OPTION 5
+        self.MASKS = True
         self.MASK_EFFECTIVENESS = .95
         self.RATIO_OF_POP_WITH_MASKS = .3
         self.MASK_MASK = 1 - self.MASK_EFFECTIVENESS
@@ -56,8 +59,12 @@ class Config:
         self.NOMASK_MASK = 0.075 # (5+10) / 2 .. disease patient with mask
 
 
-        # OPTION 5
+        # OPTION 6
         self.CONTACT_TRACING = True
+
+
+        # OPTION 7
+        # VACCINE
         self.VACCINE = True
         self.VACCINE_DISPERSION_RATE = self.POPULATION / (self.RUN_TIME_IN_DAYS / 2)
         self.SHIELD_PROVIDED_BY_VACCINE = .5
