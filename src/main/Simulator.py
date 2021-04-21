@@ -151,9 +151,11 @@ class Simulator:
             fps = np.random.randint(min_ct, max_ct)
             wv = self.wall_vector_list[w]
             p = Particle(
-                    random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
-                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.SUSCEPTIBLE_TYPE,
-                    color=cfg.SUSCEPTIBLE_COLOR, clock_tick=fps)
+                    x=random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
+                    y=random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS),
+                    status=cfg.SUSCEPTIBLE_TYPE,
+                    color=cfg.SUSCEPTIBLE_COLOR,
+                    clock_tick=fps)
             p.wear_mask()
             p.my_boundries = wv
             self.susceptible_container.append(p)
@@ -168,9 +170,11 @@ class Simulator:
             fps = np.random.randint(min_ct, max_ct)
             wv = self.wall_vector_list[w]
             p = Particle(
-                    random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
-                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.INFECTED_TYPE,
-                    color=cfg.INFECTED_COLOR, clock_tick=fps)
+                    x=random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
+                    y=random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS),
+                    status=cfg.INFECTED_TYPE,
+                    color=cfg.INFECTED_COLOR,
+                    clock_tick=fps)
             p.wear_mask()
             p.my_boundries = wv
             self.infected_container.append(p)
@@ -185,9 +189,11 @@ class Simulator:
             fps = np.random.randint(min_ct, max_ct)
             wv = self.wall_vector_list[w]
             p = Particle(
-                    random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
-                    random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS), cfg.REMOVED_TYPE,
-                    color=cfg.REMOVED_COLOR, clock_tick=fps)
+                    x=random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
+                    y=random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS),
+                    status=cfg.REMOVED_TYPE,
+                    color=cfg.REMOVED_COLOR,
+                    clock_tick=fps)
             p.my_boundries = wv
             self.removed_container.append(p)
             self.all_container.append(p)
@@ -534,7 +540,7 @@ class Simulator:
             # update -------
             p = self.all_container[pi]
 
-            if p.is_recovered:
+            if p.is_removed:
                 continue
 
             p.update_2d_vectors()
