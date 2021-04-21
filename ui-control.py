@@ -3,12 +3,10 @@ from src import Simulator
 from src import Config
 
 cfg = Config()
-
-
-def simulatecode(cfg):
+def simulatecode():
     # Runs a Simulation Code
     sim = Simulator()
-    sim.run(cfg)
+    sim.run()
 
 
 
@@ -108,6 +106,6 @@ else :
 if event == 'Run':
     cfg.COMMUNITY_ROWS=5
     cfg.COMMUNITY_COLS=5
-    simulatecode(cfg)
+    simulatecode()
 
 window.Close()
