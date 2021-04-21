@@ -158,3 +158,22 @@ def bar_chart(window, x0, y0, x1, T, data, bch):
         pygame.draw.rect(window, item[1], rect)
         display_text(window, data['font'], item[0], x0 + 10, (t + (diff/2)), (255,255,255))
 
+def make_grid_array(nrow, ncol):
+    """
+        Divides the main room into grids @ init
+    """
+    grid = dict()
+    for r in range(nrow):
+        grid[r] = dict()
+        for c in range(ncol):
+            grid[r][c] = list()
+
+    return grid
+
+def which_grid(cell_size_w, x, cell_size_h, y):
+    """
+        Returns which grid cell does the particle belong to
+    """
+    cell_x = int(x / cell_size_w)
+    cell_y = int(y / cell_size_h)
+    return cell_y, cell_x
