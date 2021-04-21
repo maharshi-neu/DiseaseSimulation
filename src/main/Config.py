@@ -107,6 +107,7 @@ class Config:
         self.LIGHTBLUE = (179, 255, 255)
 
         self.PARTICLE_RADIUS = 5
+        self.PARTICLE_DIAMETER = self.PARTICLE_RADIUS * 2
         self.PARTICLE_COLOR = (0, 255, 0)
         self.PARTICLE_DISPLACEMENT = .4
         self.PARTICLE_VELOCITY = 1

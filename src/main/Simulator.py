@@ -7,7 +7,7 @@ import os
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
         draw_line, display_text, euclidean_distance, bounce_particle,
-        uniform_probability, bar_chart)
+        uniform_probability, bar_chart, make_grid_array, which_grid)
 
 # ALSA lib pcm.c:8306:(snd_pcm_recover) underrun occurred
 os.environ['SDL_AUDIODRIVER'] = 'dsp'
@@ -79,6 +79,10 @@ class Simulator:
         self.T = cfg.POPULATION
 
         self.font = pygame.font.SysFont(None, 18)
+
+        self.grid = make_grid_array(cfg.N_GRID_ROW, cfg.N_GRID_COL)
+        self.cell_size_w = (cfg.GAME_WIDTH / cfg.N_GRID_COL)
+        self.cell_size_h = (cfg.GAME_HEIGHT / cfg.N_GRID_ROW)
 
         self.init_groups()
 
@@ -157,9 +161,11 @@ class Simulator:
         for i in range(self.n_susceptible):
             fps = np.random.randint(min_ct, max_ct)
             wv = self.wall_vector_list[w]
+            x = random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS)
+            y = random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS)
             p = Particle(
-                    x=random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
-                    y=random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS),
+                    x=x,
+                    y=y,
                     status=cfg.SUSCEPTIBLE_TYPE,
                     color=cfg.SUSCEPTIBLE_COLOR,
                     clock_tick=fps)
@@ -167,6 +173,10 @@ class Simulator:
             p.my_boundries = wv
             self.susceptible_container.append(p)
             self.all_container.append(p)
+
+            row_col = which_grid(self.cell_size_w, x, self.cell_size_h, y)
+            p.grid = row_col
+            self.grid[row_col[0]][row_col[1]].append(p)
 
             w += 1
             if w >= len(self.wall_vector_list):
@@ -176,9 +186,11 @@ class Simulator:
         for _ in range(self.n_infected):
             fps = np.random.randint(min_ct, max_ct)
             wv = self.wall_vector_list[w]
+            x = random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS)
+            y = random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS)
             p = Particle(
-                    x=random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
-                    y=random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS),
+                    x=x,
+                    y=y,
                     status=cfg.INFECTED_TYPE,
                     color=cfg.INFECTED_COLOR,
                     clock_tick=fps)
@@ -186,6 +198,9 @@ class Simulator:
             p.my_boundries = wv
             self.infected_container.append(p)
             self.all_container.append(p)
+            row_col = which_grid(self.cell_size_w, x, self.cell_size_h, y)
+            p.grid = row_col
+            self.grid[row_col[0]][row_col[1]].append(p)
 
             w += 1
             if w >= len(self.wall_vector_list):
@@ -195,20 +210,26 @@ class Simulator:
         for _ in range(self.n_recovered):
             fps = np.random.randint(min_ct, max_ct)
             wv = self.wall_vector_list[w]
+            x = random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS)
+            y = random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS)
             p = Particle(
-                    x=random_coord(wv['x0'], wv['x1'], cfg.PARTICLE_RADIUS),
-                    y=random_coord(wv['y0'], wv['y1'], cfg.PARTICLE_RADIUS),
+                    x=x,
+                    y=y,
                     status=cfg.REMOVED_TYPE,
                     color=cfg.REMOVED_COLOR,
                     clock_tick=fps)
             p.my_boundries = wv
             self.removed_container.append(p)
             self.all_container.append(p)
+            row_col = which_grid(self.cell_size_w, x, self.cell_size_h, y)
+            p.grid = row_col
+            self.grid[row_col[0]][row_col[1]].append(p)
 
             w += 1
             if w >= len(self.wall_vector_list):
                 w = 0
 
+    ''' COMMENT START
     def handle_particle_collision(self, i):
         """
             Sweep and prune
@@ -244,6 +265,43 @@ class Simulator:
                 else:
                     break
 
+        return newly_infected
+    COMMENT END'''
+
+    def handle_particle_collision(self):
+        """
+            Uniform grid spatial partition
+        """
+        diameter = cfg.PARTICLE_DIAMETER
+        newly_infected = list()
+        for i in range(cfg.N_GRID_ROW):
+            for j in range(cfg.N_GRID_COL):
+                tocheck = self.grid[i][j]
+                for m in range(len(tocheck) - 1):
+                    for n in range(m, len(tocheck)):
+                        p1 = tocheck[m]
+                        p2 = tocheck[n]
+
+                        travelling = p1.is_travelling + p2.is_travelling
+                        if (p1.status != cfg.REMOVED_TYPE != p2.status) and not travelling:
+                            condition = (p1.status == cfg.INFECTED_TYPE) + (p2.status == cfg.INFECTED_TYPE)
+                            if condition == 1:
+                                d, dx, dy = euclidean_distance(p1.x, p1.y, p2.x, p2.y)
+
+                                if diameter >= d:
+                                    bounce_particle(p1, p2, dx, dy)
+                                    if p1.is_infected:
+                                        if(p2.infect(p1, self.day)):
+                                            newly_infected.append(p2)
+                                            if not p2.will_show_symptoms and p2 not in self.asymptomatic_container:
+                                                self.asymptomatic_container.add(p2)
+                                        p1.came_in_contact_with.append(p2)
+                                    else:
+                                        if(p1.infect(p2, self.day)):
+                                            newly_infected.append(p1)
+                                            if not p1.will_show_symptoms and p1 not in self.asymptomatic_container:
+                                                self.asymptomatic_container.add(p1)
+                                        p2.came_in_contact_with.append(p1)
         return newly_infected
 
     def update_fps(self):
@@ -327,7 +385,7 @@ class Simulator:
         n_pop_now = self.alllen
         n_rec_now = self.reclen
 
-        t = int((self.tick / cfg.RUN_TIME_IN_TICK) * stats_width)
+        t = int((self.tick / cfg.RUN_TIME_IN_TICK) * stats_width) - 1
 
         y_infect = int(
             stats_height - (n_inf_now / n_pop_now) * stats_height
@@ -366,6 +424,9 @@ class Simulator:
         self.tick += 1
 
     def update_infection_timeseries(self):
+        """
+            Updates infected time series per day, used to calculate Ro
+        """
         if self.day % 1 == 0 and self.inflen != self.T:
             self.infection_timeseries.append(self.inflen)
             if len(self.infection_timeseries) > 1:
@@ -511,6 +572,13 @@ class Simulator:
                 p.radius -= 1
                 self.vaccine_availability -= 1
 
+    def update_the_grid(self, p, old_row_col):
+        """
+            Updates the grid cell in which the particle has moved to
+        """
+        self.grid[old_row_col[0]][old_row_col[1]].remove(p)
+        self.grid[p.grid[0]][p.grid[1]].append(p)
+
     def update_and_render(self):
         """
             This function is where everything happnes in terms of updates/renders
@@ -553,8 +621,15 @@ class Simulator:
             p.update_2d_vectors()
             bounce_wall(p, p.my_boundries)
 
-            if pi < self.T - 1:
-                newly_infected.extend(self.handle_particle_collision(pi))
+            # USEAGE - uniform grid
+            row_col = which_grid(self.cell_size_w, p.x, self.cell_size_h, p.y)
+            old_row_col = p.update_grid(row_col)
+            if (old_row_col):
+                self.update_the_grid(p, old_row_col)
+
+            # # USEAGE - sweep n prune
+            # if pi < self.T - 1:
+            #     newly_infected.extend(self.handle_particle_collision(pi))
 
             # render ------
             pygame.draw.circle(self.window, p.color, (p.x, p.y), p.radius)
@@ -563,6 +638,9 @@ class Simulator:
             self.trace_line(p)
             self.move_to_quarantine(p)
             self.vaccinate(p)
+
+        # USEAGE - uniform grid
+        newly_infected = self.handle_particle_collision()
 
         self.contact_trace()
         self.update_stats()

@@ -23,7 +23,7 @@ class Particle:
         self.vel = cfg.PARTICLE_VELOCITY # velocity
 
         self.f = 0 # frame
-        self.clock_tick = cfg.FPS
+        self.clock_tick = clock_tick
 
         self.infected_particles = list()
         self.my_boundries = dict()
@@ -37,6 +37,8 @@ class Particle:
 
         self.came_in_contact_with = deque()
         self.vaccinated = 0
+
+        self.grid = []
 
     @property
     def is_travelling(self):
@@ -213,4 +215,13 @@ class Particle:
         self.prev_xy_b = (self.x, self.y, self.my_boundries)
         self.my_boundries = new_walls
         self.vel *= 4
+
+    def update_grid(self, row_col):
+        """
+            Updates the partilce grid cell (Uniform grid spatial partition)
+        """
+        if self.grid != row_col:
+            old_row_col = self.grid
+            self.grid = row_col
+            return old_row_col
 
