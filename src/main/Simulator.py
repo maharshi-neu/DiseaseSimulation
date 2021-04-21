@@ -2,6 +2,7 @@ import pygame
 import numpy as np
 from collections import deque
 import logging
+import os
 
 from . import (Particle, cfg, calculate_r_naught,
         bounce_wall, build_walls, random_coord, draw_walls,
@@ -27,6 +28,11 @@ class Simulator:
                 self.running = False
 
     def __init__(self):
+
+        x = 370
+        y = 0
+        os.environ['SDL_VIDEO_WINDOW_POS'] = "%d,%d" % (x,y)
+
         pygame.init()
         self.clock = pygame.time.Clock()
         self.clock_tick = cfg.FPS

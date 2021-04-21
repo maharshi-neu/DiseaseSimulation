@@ -33,8 +33,8 @@ layout = [
 
     [
         sg.Frame('Travel Frequency', [
-            [sg.Slider(range=(0, 1), default_value=0, size=(30, 10),
-                       orientation="h", resolution=0.1, key='freq-slider')]
+            [sg.Slider(range=(0, 0.1), default_value=0, size=(30, 10),
+                       orientation="h", resolution=0.01, key='freq-slider')]
             ]),
             # Validation for Integer
     ],
@@ -44,9 +44,9 @@ layout = [
             sg.Checkbox(
                 'Mask', key='-mask-'), sg.Checkbox('Vaccine', key='-vaccine-')],
             [sg.Text('Mask effectiveness'),
-            sg.Slider(range=(0, 1), default_value=0, size=(30, 10), orientation="h", resolution=0.1, key='mask-slider')],
+            sg.Slider(range=(0, 1), default_value=0, size=(20, 10), orientation="h", resolution=0.1, key='mask-slider')],
             [sg.Text('Ratio of Population wearing mask'),
-                sg.Slider(range=(0, 1), default_value=0, size=(30, 10), orientation="h", resolution=0.1, key='mask-ratio-slider')]
+                sg.Slider(range=(0, 1), default_value=0, size=(20, 10), orientation="h", resolution=0.1, key='mask-ratio-slider')]
         ])
     ],
 
@@ -83,7 +83,7 @@ layout = [
 
 # Layout2 option for Viewing predefined scenarios and radio button to choose between layout
 
-window = sg.Window('Disease Simulation', layout)
+window = sg.Window('Disease Simulation', layout, location=(0,0))
 event, values = window.Read()
 
 if values['-mask-']:
