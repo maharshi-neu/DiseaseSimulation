@@ -379,7 +379,7 @@ class Simulator:
         n_pop_now = self.alllen
         n_rec_now = self.reclen
 
-        t = int((self.tick / cfg.RUN_TIME_IN_TICK) * stats_width)
+        t = int((self.tick / cfg.RUN_TIME_IN_TICK) * stats_width) - 1
 
         y_infect = int(
             stats_height - (n_inf_now / n_pop_now) * stats_height
