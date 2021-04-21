@@ -12,8 +12,7 @@ sg.theme('DarkAmber')   # Add a touch of color
 
 layout = [
 
-# Slider for Transmission probablity
-# Slider for Travel Frequency
+# Default values for slider, text box and validation if no values passed
 # Frequency reduced if both central and Travel enabled
 
     [
@@ -48,8 +47,6 @@ layout = [
             sg.Slider(range=(0, 1), default_value=0, size=(30, 10), orientation="h", resolution=0.1, key='mask-slider')],
             [sg.Text('Ratio of Population wearing mask'),
                 sg.Slider(range=(0, 1), default_value=0, size=(30, 10), orientation="h", resolution=0.1, key='mask-ratio-slider')]
-                # Slider for Mask effectiveness
-                # Ratio of Population with mask slider
         ])
     ],
 
@@ -57,6 +54,7 @@ layout = [
         sg.Frame('Barriers Imposed', [[
             sg.Checkbox(
                 'Quarantine', key='-quarantine-')
+            
                 # Quarantine at which day text box
         ]])
     ],
@@ -69,9 +67,9 @@ layout = [
     ],
 
     [
-        sg.Frame('Symptoms', [[  # Change to radio button for Symptomatic and Asymptomatic
+        sg.Frame('Symptoms', [[ 
             sg.Checkbox(
-                'Are you Symtomatic', key='-symptomatic-')
+                'Check if Symtomatic', key='-symptomatic-')
         ]])
     ],
 
