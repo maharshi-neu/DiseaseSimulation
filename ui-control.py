@@ -1,12 +1,10 @@
 import PySimpleGUI as sg
-from src import Simulator
-from src import Config
+from src import Simulator, cfg
 
-cfg = Config()
-def simulatecode(cfg):
+def simulatecode():
     # Runs a Simulation Code
     sim = Simulator()
-    sim.run(cfg)
+    sim.run()
 
 
 
@@ -29,7 +27,6 @@ layout = [
         sg.Frame('Preventive measures', [[
             sg.Checkbox(
                 'Mask', key='-mask-'), sg.Checkbox('Vaccine', key='-vaccine-'),
-            
                 #Slider for Mask effectiveness
                 #Ratio of Population with mask slider
         ]])
@@ -102,6 +99,6 @@ else :
     cfg.SYMPTOMATIC_ASYMPTOMATIC = False
 
 if event == 'Run':
-    simulatecode(cfg)
+    simulatecode()
 
 window.Close()

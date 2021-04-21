@@ -13,11 +13,11 @@ os.environ['SDL_AUDIODRIVER'] = 'dsp'
 
 
 class Simulator:
-    def process_input(self,cfg):
+    def process_input(self):
         """
             Keyboard input for exitting
         """
-        self.cfg = cfg
+
         event = pygame.event.poll()
         if event.type == pygame.QUIT:
             self.running = False
@@ -499,12 +499,11 @@ class Simulator:
                 p.radius -= 1
                 self.vaccine_availability -= 1
 
-    def update_and_render(self,cfg):
+    def update_and_render(self):
         """
             This function is where everything happnes in terms of updates/renders
             Called in the main game loop
         """
-        self.cfg = cfg
         self.update_tick()
         self.window.fill(cfg.BACKGROUND)
 
@@ -592,15 +591,13 @@ class Simulator:
 
         pygame.display.update()
 
-    def run(self,cfg):
+    def run(self):
         """
             The main game loop
         """
-        self.cfg = cfg
         while self.running and cfg.RUN_TIME_IN_DAYS > self.day:
-            
-            self.process_input(cfg)
-            self.update_and_render(cfg)
+            self.process_input()
+            self.update_and_render()
             self.clock.tick(self.clock_tick)
 
         pygame.quit()
