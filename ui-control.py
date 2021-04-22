@@ -29,6 +29,7 @@ sg.Frame('Disease Options', [
         sg.Text('Enter the number of row and column for generating community Grid')],
         [sg.Text('Number of rows:', key='row1'), sg.InputText(row, size=(6, 1),key='community-rows')],
         [sg.Text('Number of Columns:', key='row2'), sg.InputText(col, size=(6, 1),key='community-cols')],
+        [sg.Text('Number of Days of Simulation:', key='ndays'), sg.InputText(60, size=(6, 1),key='n-days')],
         [sg.Text('Number of Persons:', key='person'), sg.InputText(person, size=(6, 1), key='person-count')],
         [sg.Text('People Initially infected:', key='initial-infected'), sg.InputText(I0, size=(6, 1),key='infected-count')],
         ])
@@ -73,7 +74,7 @@ sg.Frame('Disease Options', [
 [
     sg.Frame('Movement', [[
         sg.Checkbox(
-            'Inter Community', key='-travel-'), sg.Checkbox('Central Location', key='-centralLocation-'), sg.Checkbox('Lockdown', key='-lockdown-')
+            'Inter Community', key='-travel-'), sg.Checkbox('Central Location', key='-centralLocation-'), sg.Button('Lockdown')
     ]])
 ],
 
@@ -115,6 +116,7 @@ while True:
             window['prob-slider'].update(cfg.TRANSMISSION_PROBABILITY)
             cfg.RECOVERED_PERIOD_IN_DAYS = 14
 
+
     if values['-mask-']:
         cfg.MASKS = True
     else:
@@ -152,6 +154,10 @@ while True:
 
     if event == 'Run':
     # Default handling value if value is zero
+        if values['n-days'] == '':
+            cfg.RUN_TIME_IN_DAYS = 60
+        else:
+            cfg.RUN_TIME_IN_DAYS = int(values['n-days'])
         if values['community-cols'] == '':
             cfg.COMMUNITY_COLS == 1
         else:
@@ -186,13 +192,15 @@ while True:
         else:
             cfg.CONTACT_TRACING = False
 
-
-        if values['-lockdown-']:
-            cfg.LOCKDOWN = values['-lockdown-']
-            cfg.TRAVEL_FREQUENCY = 0.00
-            cfg.TRANSMISSION_PROBABILITY =  0.0
-            cfg.TRAVEL = False
         simulatecode()
+    if event =='Lockdown':
+        window['-travel-'].update(False)
+        window['freq-slider'].update(0.00)
+        window['community-rows'].update(15)
+        window['community-cols'].update(15)
+        window['person-count'].update(300)
+        window['-centralLocation-'].update(True)
+
 
     if event =='Exit':
         window.Close()
