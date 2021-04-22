@@ -71,6 +71,10 @@ class Config:
         self.SHIELD_PROVIDED_BY_VACCINE = .5
 
 
+        #Option 8 
+        self.LOCKDOWN = True
+        
+
         # --------------------------------------------------------------
         # TESTING MODE
         self.TESTING_MODE  = False

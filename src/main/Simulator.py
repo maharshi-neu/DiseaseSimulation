@@ -568,9 +568,21 @@ class Simulator:
                 will_p_get_vaccine += .3
             if will_p_get_vaccine <= probability_of_getting_vaccine and self.vaccine_availability >= 1:
                 p.vaccinated += cfg.SHIELD_PROVIDED_BY_VACCINE
-                p.color = cfg.LIGHTBLUE
+                if p.vaccinated == cfg.SHIELD_PROVIDED_BY_VACCINE:
+                    p.color = cfg.LIGHTPINK
+                elif p.vaccinated > cfg.SHIELD_PROVIDED_BY_VACCINE:
+                    p.color = cfg.LIGHTBLUE
+
                 p.radius -= 1
                 self.vaccine_availability -= 1
+
+
+    def lockdown(self, p):
+        """
+            
+        """
+        if cfg.LOCKDOWN:
+            cfg.TRAVEL_FREQUENCY = 0.0
 
     def update_the_grid(self, p, old_row_col):
         """
