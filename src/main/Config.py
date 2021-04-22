@@ -27,6 +27,7 @@ class Config:
         self.TRANSMISSION_PROBABILITY = 0.90
 
 
+
         # OPTION 1
         self.QUARANTINE = True
         self.QUARANTINE_AT_DAY = 5
@@ -71,9 +72,14 @@ class Config:
         self.SHIELD_PROVIDED_BY_VACCINE = .5
 
 
-        #Option 8 
+        #Option 8
         self.LOCKDOWN = True
-        
+
+
+
+        # FOR INFLUENZA UNCOMMENT THE BELOW
+        self.TRANSMISSION_PROBABILITY = 0.50
+        self.RECOVERED_PERIOD_IN_DAYS = 5
 
         # --------------------------------------------------------------
         # TESTING MODE

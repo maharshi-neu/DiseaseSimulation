@@ -1,5 +1,10 @@
-from src import ui
+from src import ui, Simulator
 
+WANT_UI = True
 
 if __name__ == "__main__":
-    ui()
+    if WANT_UI:
+        ui()
+    else:
+        sim = Simulator()
+        sim.run()
