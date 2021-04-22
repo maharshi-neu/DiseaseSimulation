@@ -25,6 +25,11 @@ class Simulator:
         elif event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 self.running = False
+            elif event.key == pygame.K_SPACE:
+                if not self.pause:
+                    self.pause = True
+                else:
+                    self.pause = False
 
     def __init__(self):
 
@@ -35,6 +40,7 @@ class Simulator:
         pygame.init()
         self.clock = pygame.time.Clock()
         self.clock_tick = cfg.FPS
+        self.pause = False
 
         pygame.display.set_caption(cfg.GAME_TITLE)
 
@@ -714,8 +720,9 @@ class Simulator:
 
         while self.running and cfg.RUN_TIME_IN_DAYS > self.day:
             self.process_input()
-            self.update_and_render()
-            self.clock.tick(self.clock_tick)
+            if not self.pause:
+                self.update_and_render()
+                self.clock.tick(self.clock_tick)
 
         if cfg.LOGGING:
             logging.info("END")
