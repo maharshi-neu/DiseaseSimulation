@@ -10,4 +10,4 @@
 - To run tests
   - ```python src/unit_test.py```
 
-VIDEO Link - https://northeasternmy.sharepoint.com/:v:/g/personal/jinandra_m_northeastern_edu/EYlUuDJYe51NlzbqSQiyFVAB_BWdVHuG24aV2afQvDds-w?e=lKS4Iu
+VIDEO Link - [https://northeasternmy.sharepoint.com/:v:/g/personal/jinandra_m_northeastern_edu/EYlUuDJYe51NlzbqSQiyFVAB_BWdVHuG24aV2afQvDds-w?e=lKS4Iu](url)
