@@ -723,7 +723,7 @@ class Simulator:
                 font = pygame.font.SysFont(None, 32)
                 display_text(
                         self.window, font,
-                        "Simulation DONE, reached days limit",
+                        "[ Simulation DONE, reached days limit ]",
                         cfg.GAME_WIDTH // 4, cfg.GAME_HEIGHT // 2)
                 self.pause = True
                 pygame.display.update()
