@@ -718,7 +718,15 @@ class Simulator:
         if cfg.LOGGING:
             logging.info("START")
 
-        while self.running and cfg.RUN_TIME_IN_DAYS > self.day:
+        while self.running:
+            if cfg.RUN_TIME_IN_DAYS < self.day:
+                font = pygame.font.SysFont(None, 32)
+                display_text(
+                        self.window, font,
+                        "Simulation DONE, reached days limit",
+                        cfg.GAME_WIDTH // 4, cfg.GAME_HEIGHT // 2)
+                self.pause = True
+                pygame.display.update()
             self.process_input()
             if not self.pause:
                 self.update_and_render()
