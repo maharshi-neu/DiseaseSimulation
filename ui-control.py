@@ -101,7 +101,7 @@ sg.Frame('Disease Options', [
 ]
 
 # Layout2 option for Viewing predefined scenarios and radio button to choose between layout
-window = sg.Window('Disease Simulation', layout, location=(0,0))
+window = sg.Window('Disease Simulation',  layout, resizable=True,location=(0,0))
 
 while True: 
     event, values = window.Read()
@@ -115,7 +115,6 @@ while True:
             cfg.TRANSMISSION_PROBABILITY = 0.90
             window['prob-slider'].update(cfg.TRANSMISSION_PROBABILITY)
             cfg.RECOVERED_PERIOD_IN_DAYS = 14
-
 
     if values['-mask-']:
         cfg.MASKS = True
