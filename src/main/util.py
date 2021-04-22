@@ -79,7 +79,7 @@ def draw_walls(window, wv, wall_width):
     """
         Renders the walls based on wall vectors dict(name:boundary) and the provided width
     """
-    wall_color = (28, 21, 0) # RGB
+    wall_color = (36, 27, 0) # RGB
     # left wall
     leftRect = pygame.Rect(wv['x0'], wv['y0'], wall_width, wv['y1']) # left, top, width, height
     pygame.draw.rect(window, wall_color, leftRect)

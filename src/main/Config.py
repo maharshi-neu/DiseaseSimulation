@@ -71,6 +71,10 @@ class Config:
         self.SHIELD_PROVIDED_BY_VACCINE = .5
 
 
+        #Option 8 
+        self.LOCKDOWN = True
+        
+
         # --------------------------------------------------------------
         # TESTING MODE
         self.TESTING_MODE  = False
@@ -96,11 +100,15 @@ class Config:
         self.BLUE = (0, 0, 70)
         self.BLACK = (0, 0, 0)
         self.GREY = (30, 30, 30)
+        self.LIGHTYELLOW = (255, 255, 153)
         self.WHITE = (255, 255, 255)
         self.SICK_YELLOW = (190, 175, 50)
         self.PURPLE = (130, 0, 130)
         self.ORANGERED = (225, 69, 0)
         self.MASKGREEN = (2, 150, 90)
+        self.LIGHTORANGE = (255, 204, 102)
+        self.LIGHTPINK = (255, 204, 255)
+        self.LIGHTBLUE = (179, 255, 255)
 
         self.PARTICLE_RADIUS = 5
         self.PARTICLE_DIAMETER = self.PARTICLE_RADIUS * 2
@@ -113,9 +121,10 @@ class Config:
         self.REMOVED_TYPE = 1
 
         self.SUSCEPTIBLE_COLOR = self.LIGHTGREEN
-        self.MASKED_SUS_COLOR = self.MASKGREEN
+        self.MASKED_SUS_COLOR = self.LIGHTORANGE
         self.INFECTED_COLOR = self.RED
         self.MASKED_INF_COLOR = self.ORANGERED
         self.REMOVED_COLOR = self.GREY
+        self.VACCINATED = self.LIGHTPINK
 
         self.BACKGROUND = (10, 10, 10)
