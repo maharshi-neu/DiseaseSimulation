@@ -54,7 +54,7 @@ sg.Frame('Disease Options', [
 [
     sg.Frame('Preventive measures', [[
         sg.Checkbox(
-            'Mask', key='-mask-'), sg.Checkbox('Vaccine', key='-vaccine-')],
+            'Mask', key='mask'), sg.Checkbox('Vaccine', key='vaccine')],
         [sg.Text('Mask effectiveness'),
         sg.Slider(range=(0, 1), default_value=0,size=(20, 10), orientation="h", resolution=0.1, key='mask-slider')],
         [sg.Text('Ratio of Population wearing mask'),
@@ -65,7 +65,7 @@ sg.Frame('Disease Options', [
 [
     sg.Frame('Barriers Imposed', [[
         sg.Checkbox(
-            'Quarantine', key='-quarantine-'),
+            'Quarantine', key='quarantine'),
         sg.Text('Quarantine at Day:', key='qday'), sg.InputText(qday, size=(6, 1), key='qday-value'),sg.Button('Lockdown')
 
     ]])
@@ -74,14 +74,14 @@ sg.Frame('Disease Options', [
 [
     sg.Frame('Movement', [[
         sg.Checkbox(
-            'Inter Community', key='-travel-'), sg.Checkbox('Central Location', key='-centralLocation-')
+            'Inter Community', key='travel'), sg.Checkbox('Central Location', key='centralLocation')
     ]])
 ],
 
 [
     sg.Frame('Symptoms', [[ 
         sg.Checkbox(
-            'Enable for Asymtomatic', key='-symptomatic-')
+            'Enable for Asymtomatic', key='symptomatic')
     ]])
 ],
 
@@ -116,40 +116,40 @@ while True:
             window['prob-slider'].update(cfg.TRANSMISSION_PROBABILITY)
             cfg.RECOVERED_PERIOD_IN_DAYS = 14
 
-    if values['-mask-']:
+    if values and values.get('mask'):
         cfg.MASKS = True
     else:
         cfg.MASKS = False
 
-    if values['-vaccine-']:
+    if  values and values.get('vaccine'):
         cfg.VACCINE = True
     else:
         cfg.VACCINE = False
     ###
-    if values['-quarantine-']:
+    if values and values.get('quarantine'):
         cfg.QUARANTINE = True
     else:
         cfg.QUARANTINE = False
 
-    if values['-travel-']:
+    if  values and values.get('travel'):
         cfg.TRAVEL = True
     else:
         cfg.TRAVEL = False
 
-    if values['-centralLocation-']:
+    if values and values.get('centralLocation'):
         cfg.CENTRAL_LOCATION = True
     else:
         cfg.CENTRAL_LOCATION = False
 
-    if values['-symptomatic-']:
+    if values and values.get('symptomatic'):
         cfg.SYMPTOMATIC_ASYMPTOMATIC = True
     else:
         cfg.SYMPTOMATIC_ASYMPTOMATIC = False
 
-    if values['qday-value']=='':
-        cfg.QUARANTINE_AT_DAY = 5
-    else:
+    if values and values.get('q-day'):
         cfg.QUARANTINE_AT_DAY = int(values['qday-value'])
+    else:
+        cfg.QUARANTINE_AT_DAY = 5
 
     if event == 'Run':
     # Default handling value if value is zero
@@ -193,13 +193,16 @@ while True:
 
         simulatecode()
     if event =='Lockdown':
-        window['-travel-'].update(False)
+        window['travel'].update(False)
         window['freq-slider'].update(0.00)
         window['community-rows'].update(15)
         window['community-cols'].update(15)
         window['person-count'].update(300)
-        window['-centralLocation-'].update(True)
+        window['centralLocation'].update(True)
 
-
+    if event == sg.WIN_CLOSED:
+        window.close()
+        break
     if event =='Exit':
         window.Close()
+        break
