@@ -1,4 +1,4 @@
-# disease-simulation - team 18
+# Disease Simulation - team 18
 
 - Clone the git repository on your local machine
     ```git clone https://github.com/maharshi-neu/disease-simulation```
