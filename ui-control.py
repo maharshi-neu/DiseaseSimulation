@@ -66,7 +66,7 @@ sg.Frame('Disease Options', [
     sg.Frame('Barriers Imposed', [[
         sg.Checkbox(
             'Quarantine', key='-quarantine-'),
-        sg.Text('Quarantine at Day:', key='qday'), sg.InputText(qday, size=(6, 1), key='qday-value'),
+        sg.Text('Quarantine at Day:', key='qday'), sg.InputText(qday, size=(6, 1), key='qday-value'),sg.Button('Lockdown')
 
     ]])
 ],
@@ -74,7 +74,7 @@ sg.Frame('Disease Options', [
 [
     sg.Frame('Movement', [[
         sg.Checkbox(
-            'Inter Community', key='-travel-'), sg.Checkbox('Central Location', key='-centralLocation-'), sg.Button('Lockdown')
+            'Inter Community', key='-travel-'), sg.Checkbox('Central Location', key='-centralLocation-')
     ]])
 ],
 
